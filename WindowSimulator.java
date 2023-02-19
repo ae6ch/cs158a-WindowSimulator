@@ -17,5 +17,7 @@ class WindowSimulator {
             System.out.println("Invald Inputs");
             System.exit(1);
         }
+
+        int MaxSeqNum=sws*2;
     }
 }
