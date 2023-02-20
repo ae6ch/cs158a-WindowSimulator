@@ -13,7 +13,7 @@ class WindowSimulator {
         float prob_not_ackd=Float.parseFloat(args[4]);
         int num_frames=Integer.parseInt(args[5]);
 		
-		if ((channel_length < sws) || (sws<0 && sws>127) || (rws<0 && rws>127) || (prob_not_recv < 0 && prob_not_recv > 1) || (prob_not_ackd < 0 && prob_not_ackd > 1)) {
+		if ((channel_length < sws) || (sws<1 || sws>127) || (rws<1 || rws>127) || (prob_not_recv < 0 || prob_not_recv > 1) || (prob_not_ackd < 0 || prob_not_ackd > 1)) {
             System.out.println("Invald Inputs");
             System.exit(1);
         }
