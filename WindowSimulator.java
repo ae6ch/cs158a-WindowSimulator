@@ -22,19 +22,19 @@ class WindowSimulator {
             System.exit(1);
         }
         
-        sender = Station.Station(sws, rws, prop_not_ackd);
-        receiver = Station.Station(sws, rws, prop_not_recv);
-        senderPipe = Pipe.Pipe(channellenght??); // ***TODO***
-        receiverPipe = Pipe.Pipe(channellenght??); // **TODO**
+        Station sender = new Station(sws, rws, prob_not_ackd);
+        Station receiver = new Station(sws, rws, prob_not_recv);
+        Pipe senderPipe = new Pipe(channellenght??); // ***TODO***
+        Pipe receiverPipe = new Pipe(channellenght??); // **TODO**
         int MaxSeqNum=sws*2;
         int steps=0;
-        int counter=0
+        int counter=0;
         boolean notDone=true;
-        int sumUtilizations=0
+        int sumUtilizations=0;
         
         while(notDone) {
             // Prints the word "Step" followed by the current value of step followed by a newline.
-            system.out.printf("Step %d",notDone);
+            system.out.printf("Step %d",steps);
             
             // Prints "senderPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
             system.out.println("senderPipe");
