@@ -34,7 +34,7 @@ class WindowSimulator {
         
         while(notDone) {
             // Prints the word "Step" followed by the current value of step followed by a newline.
-            System.out.printf("Step %d",steps);
+            System.out.printf("Step %d\n",steps);
             
             // Prints "senderPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
             System.out.println("senderPipe");
@@ -47,10 +47,10 @@ class WindowSimulator {
             System.out.println("");
 
             // Adds the average of the senderPipe and receiverPipe utilization to sumUtilizations.
-            sumUtilizations += (senderPipe.utilization+receiverPipe.utilization)/2;
+            sumUtilizations += (senderPipe.utilization()+receiverPipe.utilization())/2;
             
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
-            if (counter < num_frames) && senderPipe.isReady() && receiverPipe.isReady() {
+            if ( (counter < num_frames) && sender.isReady() && receiver.isReady() ) {
                     sender.send(counter++);
             }
             
@@ -64,7 +64,7 @@ class WindowSimulator {
             // The receiver's nextTransmitFrame() method is then called, 
             // and the byte array from this is used to call the receiverPipe's addFrame method.
             // The returned frame from this addFrame call is then sent to the sender's receiveFrame method. 
-            sender.receiveFrame(receiverPipe.addFrame(receiver.nextTrasmitFrame()));
+            sender.receiveFrame(receiverPipe.addFrame(receiver.nextTransmitFrame()));
 
             //If this frame was an acknowledgement for the num_frames - 1th sent frame, then notDone is set to false to terminate the while loop.
             // *TODO*
@@ -80,7 +80,7 @@ class WindowSimulator {
         } 
         // Once this loop completes, WindowSimulator should output the final value of steps 
         // and it should compute sumUtilizations/steps and output this as the average pipe utilization.
-        system.out.printf("Steps %d\nAverage Pipe Utilization: %f",steps, sumUtilizations/steps);
+        System.out.printf("Steps %d\nAverage Pipe Utilization: %f\n",steps, sumUtilizations/steps);
         
     }
 }
