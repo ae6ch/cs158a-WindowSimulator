@@ -24,8 +24,8 @@ class WindowSimulator {
         
         Station sender = new Station(sws, rws, prob_not_ackd);
         Station receiver = new Station(sws, rws, prob_not_recv);
-        Pipe senderPipe = new Pipe(channellenght??); // ***TODO***
-        Pipe receiverPipe = new Pipe(channellenght??); // **TODO**
+        Pipe senderPipe = new Pipe(channel_length);
+        Pipe receiverPipe = new Pipe(channel_length);
         int MaxSeqNum=sws*2;
         int steps=0;
         int counter=0;
@@ -34,17 +34,17 @@ class WindowSimulator {
         
         while(notDone) {
             // Prints the word "Step" followed by the current value of step followed by a newline.
-            system.out.printf("Step %d",steps);
+            System.out.printf("Step %d",steps);
             
             // Prints "senderPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
-            system.out.println("senderPipe");
+            System.out.println("senderPipe");
             senderPipe.printContents();
-            system.out.println("");
+            System.out.println("");
             
             // Prints "receiverPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
-            system.out.println("receiverPipe");
+            System.out.println("receiverPipe");
             receiverPipe.printContents();
-            system.out.println("");
+            System.out.println("");
 
             // Adds the average of the senderPipe and receiverPipe utilization to sumUtilizations.
             sumUtilizations += (senderPipe+receiverPipe)/2;
