@@ -1,16 +1,16 @@
-class Pipe {
+public class Pipe {
 
-    Pipe(int channelLength) {
+    public Pipe(int channelLength) {
     }
     
-    byte[] addFrame(byte[] frame) {
+    public byte[] addFrame(byte[] frame) {
 
     }
-    float utilization() {
+    public float utilization() {
 
     }
 
-    void printContents() {
+    public void printContents() {
 
     }
 

@@ -1,19 +1,19 @@
-class Station {
-    Station(int sws, int rws, float propDrop) {
+public class Station {
+    public Station(int sws, int rws, float propDrop) {
     }
     
-    boolean isReady() {
+    public boolean isReady() {
 
     }
-    boolean send(int data) {
-
-    }
-
-    byte[] nextTransmitFrame() {
+    public boolean send(int data) {
 
     }
 
-    void receiveFrame(byte[] frame){
+    public byte[] nextTransmitFrame() {
+
+    }
+
+    public void receiveFrame(byte[] frame){
 
     }
 }
