@@ -47,7 +47,7 @@ class WindowSimulator {
             System.out.println("");
 
             // Adds the average of the senderPipe and receiverPipe utilization to sumUtilizations.
-            sumUtilizations += (senderPipe+receiverPipe)/2;
+            sumUtilizations += (senderPipe.utilization+receiverPipe.utilization)/2;
             
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
             if (counter < num_frames) && senderPipe.isReady() && receiverPipe.isReady() {
