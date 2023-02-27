@@ -15,13 +15,16 @@ public class Pipe {
         return retVal;
     }
     public float utilization() { //returns the number of frames currently in the pipe that are not non-frame frames divided by the channelLength.
-        int notFrame=0;
+        float notFrame=0;
         for (int n=0; n < channel.length; n +=5) {
-            if (!(channel[n] == 255 && channel[n+1] == 255 && channel[n+2] == 255 && channel[n+3] == 255 && channel[n+4] == 255)) 
+                //System.out.printf("%d=%02x %02x %02x %02x %02x\n",n,channel[n],channel[n+1],channel[n+2],channel[n+3],channel[n+4]);
+            if (!((channel[n] == (byte)255) && (channel[n+1] == (byte)255) && (channel[n+2] == (byte)255) && (channel[n+3] == (byte)255) && (channel[n+4] == (byte)255)))  {
                 notFrame++;
+                //System.out.printf("%d=%02x %02x %02x %02x %02x is not a frame\n",n,channel[n],channel[n+1],channel[n+2],channel[n+3],channel[n+4]);
+            }
         }
-        //System.out.printf("\nnotframe=%d\n",notFrame);
-        return notFrame/(channel.length/5);
+        //System.out.printf("\nnotframe=%f\n",notFrame);
+        return notFrame/((float)channel.length/5.0f);
     }
 
     public void printContents() {

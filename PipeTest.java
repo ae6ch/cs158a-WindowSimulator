@@ -9,7 +9,7 @@ public class PipeTest {
         System.out.println("printContents() should be all f's -------------------------\n");
         testPipe.printContents();
         System.out.println("");
-        System.out.println("utilization() should output 1 -------------------------\n");
+        System.out.println("utilization() should output 0 -------------------------\n");
         System.out.println(testPipe.utilization()); 
         System.out.println("");
     
@@ -17,10 +17,14 @@ public class PipeTest {
         byte[] tmpframe2={0xa,0xa,0xa,0xa,0xa};
         byte[] tmpframe3={0xb,0xb,0xb,0xb,0xb};
         byte[] tmpframe4={0xc,0xc,0xc,0xc,0xc};
+
         System.out.printf("",testPipe.addFrame(tmpframe));
+        testPipe.addFrame(tmpframe);
         testPipe.addFrame(tmpframe2);
         testPipe.addFrame(tmpframe3);
         byte[] pushedoffFrame = testPipe.addFrame(tmpframe4);
+        System.out.println("utilization() should output 1 after 4 addframes -------------------------\n");
+        System.out.println(testPipe.utilization()); 
 
         System.out.println("printContents() should be 5x each of 0xc 0xb 0xa ------------------------\n");
         testPipe.printContents();
