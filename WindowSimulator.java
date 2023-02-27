@@ -64,11 +64,16 @@ class WindowSimulator {
             // The receiver's nextTransmitFrame() method is then called, 
             // and the byte array from this is used to call the receiverPipe's addFrame method.
             // The returned frame from this addFrame call is then sent to the sender's receiveFrame method. 
-            sender.receiveFrame(receiverPipe.addFrame(receiver.nextTransmitFrame()));
+            // If this frame was an acknowledgement for the num_frames - 1th sent frame, then notDone is set to false to terminate the while loop.
+            // For our simulations we will use 5 byte frames: 1 byte for a sequence number, followed by 4 bytes of data. 
+            // We will treat the frame seq_num 255 255 255 254 as an acknowledgement for the last frame to have sequence number seq_num. 
+            // We will treat 255 255 255 255 255 as a non-frame frame (nothing being sent for one frame). The value MaxSeqNum used by your simulation should be set to 2*sws. 
+            // A simulation involves the sender sending over the channels frames with data: 0, 1, 2, ..., num_frames - 1, and runs until all of the frames are acknowledged.
+            byte[] frame=receiverPipe.addFrame(receiver.nextTransmitFrame());
+            sender.receiveFrame(frame);
 
             //If this frame was an acknowledgement for the num_frames - 1th sent frame, then notDone is set to false to terminate the while loop.
-            // *TODO*
-            if (something) {
+            if ((frame[0] == num_frames-1 ) && frame[1] == 255 && frame[2] == 255 && frame[3] == 255 && frame[4] == 254) {
                 notDone=false;
 
             }
