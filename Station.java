@@ -5,7 +5,6 @@
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-
 /**
  *
  * @author zayd
@@ -136,7 +135,11 @@ public class Station {
         4. There is a frame in the sender window that has not yet been sent. 
         Choose the oldest such frame and start a timer for it.
         */
-       for(int j = 0; j < timers.length; j++){
+
+     
+      
+      
+        for(int j = 0; j < timers.length; j++){
         System.out.printf("walking timer %d\n",j);
         //            if((timers[j] <= 0) && (sbuf[j*5] < temp)){
             //if((timers[j] <= 0) && (sbuf[j*5] < temp)){
@@ -185,6 +188,16 @@ public class Station {
        }
        */
        
+        /*
+        After choosing the frame according to the above, nextTransmitFrame() generates a 
+        random number between 0 and 1. If it is less than propDrop, nextTransmitFrame() 
+        returns the non-frame frame; otherwise, it returns the frame chosen as above.
+
+        Just set isCandidate back to false 
+        */
+       
+       if (Math.random() < propDrop) isCandidate = false;
+
        // did we ever put a frame into sendCandidate?
        // can't just see if its 0,0,0,0,0 because thats a valid sendable frame
        if (isCandidate) { 
@@ -193,7 +206,7 @@ public class Station {
             return sendCandidate;
        }
 
-       // we never picked a candidate to send, send non_frame 
+       // we never picked a candidate to send, OR because propdrop math send non_frame 
         byte[] non_frame = {(byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255};
         return non_frame; 
     }
