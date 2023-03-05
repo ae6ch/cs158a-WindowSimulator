@@ -2,7 +2,6 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package window;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -46,20 +45,28 @@ public class Station {
             lar = lfs;
             
     }
-    
+    public void printbuf(byte [] buffer) {
+                System.out.println("[sq] Payload");
+        for (int idx=0; idx < sws; idx++) {
+                int packet=idx*5;
+                System.out.printf("[%d] %x %x %x %x\n",buffer[packet],buffer[packet+1],buffer[packet+2],buffer[packet+3],buffer[packet+4]);
+
+        }
+    }
     public boolean isReady() {
         return (laf - lfr) <= rws;
     }
     public boolean send(int data) {
         for(int i = 0; i < timers.length; i++){
-            timers[i] -= 1;
+             timers[i] -= 1;
+            if (timers[i] >= 0)   timers[i] -= 1;
+
         }
         
         //cite this
-        byte[] temp = ByteBuffer.allocateDirect(4).putInt(data).array();
+        byte[] temp = ByteBuffer.allocate(4).putInt(data).array();
         
         lfs = (lfs + 1) % maxSeq;
-
         int index = (lfs % sws)*5;
         if(sbuf[index] == (byte) 255){
             sbuf[index] = (byte) lfs;
@@ -67,21 +74,33 @@ public class Station {
             sbuf[index+2] = temp[1];
             sbuf[index+3] = temp[2];
             sbuf[index+4] = temp[3];
+          
             return true;
-        }
+        } 
+       
         return false;
     }
 
     public byte[] nextTransmitFrame() {
+        byte [] sendCandidate;
+        sendCandidate = new byte[5];  // The outgoing frame is stored here as we go
+        boolean isCandidate=false;    // set to true when we have a candidate in the buffer
+                                    
+
         for(int i = 0; i < timers.length; i++){
-            timers[i] -= 1;
+            timers[i] -= 1; 
+            if (timers[i] >= 0) timers[i] -= 1; 
+            System.out.printf("timer%d = %d\n",i,timers[i]);
         }
        
        int i = ((lfa + 1) % maxSeq) % rws;
        byte temp = (byte) 255;
        //255 might be a seq num for a real frame, check underneath commented lines
-       while(rbuf[i] != (byte) 255 && i < rbuf.length){
+      
+      /* why is nextTransmitFrame writing into rbuf?
+      while(rbuf[i] != (byte) 255 && i < rbuf.length){
             temp = rbuf[i];
+            System.out.printf("temp is %x",temp);
             rbuf[i] = (byte) 255;
             rbuf[i+1] = (byte) 255;
             rbuf[i+2] = (byte) 255;
@@ -89,45 +108,81 @@ public class Station {
             rbuf[i+4] = (byte) 255;
             i+=5;
        }
-       if(temp != 255){
+       */
+    
+       if(temp != (byte)255){
+            System.out.printf("temp is %x, sending a ack",temp);
            byte[] ack = {temp, (byte) 255, (byte) 255, (byte) 255, (byte) 254};
+           System.out.println("sending ack");
            return ack;
        }
        
        temp = (byte) 255;
        i=0;
        for(int j = 0; j < timers.length; j++){
-            if(timers[j] <= 0 && sbuf[j*5] < temp){
-                temp = sbuf[j*5];
-                i = j*5;
+        System.out.printf("walking timer %d\n",j);
+        //            if((timers[j] <= 0) && (sbuf[j*5] < temp)){
+            //if((timers[j] <= 0) && (sbuf[j*5] < temp)){
+            if(timers[j] <= 0)  {
+                System.out.printf(" - expired");
+                // Expired Timer, but non-frame  
+                if ((sbuf[j*5]==(byte)  255) && (sbuf[j*5+1]==(byte)  255) && (sbuf[j*5+2]==(byte)  255) && (sbuf[j*5+3]==(byte)  255) &&(sbuf[j*5+4]==(byte) 255)) {
+                  System.out.printf(" - non frame"); 
+                }
+                // Expired Timer, but is a sendable frame
+                else if (sbuf[j*5] <= sendCandidate[0]) { // Pick the sendable frame with lowest seq
+                    System.out.printf(" - frame w/seq %d",sbuf[j*5]); 
+                    isCandidate=true;
+                    System.arraycopy(sbuf,j*5,sendCandidate,0,5); // make the expired timer frame our candidate
+                    System.out.printf(" - sendCandiate = %x %x %x %x %x",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
+
+                }
+                else System.out.printf(" - frame w/seq %d is expired but older", sbuf[j*5]); 
             }
+            System.out.printf("\n");
         }
        
-       if(temp != 255){
+       if(temp != (byte)255){
            byte[] resend = {sbuf[i], sbuf[i+1], sbuf[i+2], sbuf[i+3], sbuf[i+4]};
            timers[i/5] = TIMER;
+           System.out.println("resending something");
            return resend;
        }
        
-       i = 0;
-       //
-       while(rbuf[i] == (byte) 255  && i < rbuf.length){
-           i+=5;
+       /* 
+              System.out.printf("sbuf.length=%d\n",sbuf.length);
+       //while(rbuf[i] == (byte) 255  && i < rbuf.length){
+        i = 0;
+        while(i < sbuf.length){
+            System.out.printf("i=%d\n",i);
+           if (sbuf[i] == (byte) 255) i+=5;
        }
-       
-       if(i < rbuf.length){
-           byte[] send = {rbuf[i], rbuf[i+1], rbuf[i+2], rbuf[i+3], rbuf[i+4]};
+    
+        System.out.printf("before send i=%d\n",i);
+       if(i < sbuf.length){
+           byte[] send = {sbuf[i], sbuf[i+1], sbuf[i+2], sbuf[i+3], sbuf[i+4]};
            timers[i/5] = TIMER;
+           System.out.println("sending a packet");
            return send;
        }
+       */
        
-       byte[] non_frame = {(byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255};
-       return non_frame;
+       // did we ever put a frame into sendCandidate?
+       // can't just see if its 0,0,0,0,0 because thats a valid sendable frame
+       if (isCandidate) { 
+            // (re)set the timer to whatever we are sending to TIMER
+            timers[sendCandidate[0]] = TIMER;
+            return sendCandidate;
+       }
+
+       // we never picked a candidate to send, send non_frame 
+        byte[] non_frame = {(byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255};
+        return non_frame; 
     }
 
     public void receiveFrame(byte[] frame){
         for(int i = 0; i < timers.length; i++){
-            timers[i] -= 1;
+            if (timers[i] >= 1) timers[i] -= 1;
         }
         if(frame[1] == 255 && frame[2] == 255 && frame[3] == 255 && frame[4] == 254){
             
@@ -150,8 +205,10 @@ public class Station {
         }
         else {
             if((frame[0] <= lfr || frame[0] >= laf)){
+                System.out.printf("f0=%x lfr=%x laf=%x",frame[0],lfr,laf);
                 int index = frame[0] % rws;
                 //
+                System.out.printf("index is %d\n",index);
                 if(rbuf[index] == (byte) 255){
                     rbuf[index] = frame[0];
                     rbuf[index+1] = frame[1];
