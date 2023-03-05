@@ -10,8 +10,8 @@ public class StationTest {
        // System.out.printf("Sending 3 frames with the payloads a,b,c dump send buf\n");
      txStation.send(0xa);
     
-    txStation.send(0xb);
-    txStation.send(0xc);
+    //txStation.send(0xb);
+    //txStation.send(0xc);
     // should see the 3 frames in sbuf
     txStation.printbuf(txStation.sbuf);
     
@@ -26,10 +26,6 @@ public class StationTest {
        System.out.printf("nextTransitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
        txframe = txStation.nextTransmitFrame() ;
        System.out.printf("nextTransitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
-       
-
-
-       
        
        //rxStation.receiveFrame(txframe);
 

@@ -63,7 +63,7 @@ public class Station {
 
         }
         
-        //cite this
+        //cite this - why, we're not copying code just using a function the waymit was intended?
         byte[] temp = ByteBuffer.allocate(4).putInt(data).array();
         
         lfs = (lfs + 1) % maxSeq;
@@ -93,10 +93,11 @@ public class Station {
             System.out.printf("timer%d = %d\n",i,timers[i]);
         }
        
-       int i = ((lfa + 1) % maxSeq) % rws;
-       byte temp = (byte) 255;
+      // int i = ((lfa + 1) % maxSeq) % rws;
+      // byte temp = (byte) 255;
        //255 might be a seq num for a real frame, check underneath commented lines
       
+
       /* why is nextTransmitFrame writing into rbuf?
       while(rbuf[i] != (byte) 255 && i < rbuf.length){
             temp = rbuf[i];
@@ -110,15 +111,31 @@ public class Station {
        }
        */
     
+       /* I don't think this works, it needs to look in rbuf to figure this out
        if(temp != (byte)255){
             System.out.printf("temp is %x, sending a ack",temp);
            byte[] ack = {temp, (byte) 255, (byte) 255, (byte) 255, (byte) 254};
            System.out.println("sending ack");
            return ack;
        }
+       */
        
-       temp = (byte) 255;
-       i=0;
+       //temp = (byte) 255;
+       //i=0;
+        /*
+         1. There is an acknowledgment frame that could be sent.
+            ***TODO****
+        */
+       
+
+       /*
+        2. There is a frame in the sender window whose timer went off that has not yet been 
+        resent. 
+        3. Choose the oldest such frame that has not been resent. After choosing this 
+        frame reset its timer.
+        4. There is a frame in the sender window that has not yet been sent. 
+        Choose the oldest such frame and start a timer for it.
+        */
        for(int j = 0; j < timers.length; j++){
         System.out.printf("walking timer %d\n",j);
         //            if((timers[j] <= 0) && (sbuf[j*5] < temp)){
@@ -141,13 +158,14 @@ public class Station {
             }
             System.out.printf("\n");
         }
-       
+    /* 
        if(temp != (byte)255){
            byte[] resend = {sbuf[i], sbuf[i+1], sbuf[i+2], sbuf[i+3], sbuf[i+4]};
            timers[i/5] = TIMER;
            System.out.println("resending something");
            return resend;
        }
+    */
        
        /* 
               System.out.printf("sbuf.length=%d\n",sbuf.length);
@@ -182,7 +200,7 @@ public class Station {
 
     public void receiveFrame(byte[] frame){
         for(int i = 0; i < timers.length; i++){
-            if (timers[i] >= 1) timers[i] -= 1;
+            if (timers[i] >= 0) timers[i] -= 1;
         }
         if(frame[1] == 255 && frame[2] == 255 && frame[3] == 255 && frame[4] == 254){
             
@@ -193,11 +211,11 @@ public class Station {
                     if(sbuf[i] != (byte) 255)
                     if((lar > frame[0] && (sbuf[i] <= frame[0] || sbuf[i] > lar)) || (lar < frame[0] && (sbuf[i] <= frame[0] && sbuf[i] > lar))) {
                         
-                        sbuf[i] = (byte) 255;
+                        sbuf[i] = (byte) 255;          
                         sbuf[i+1] = (byte) 255;
                         sbuf[i+2] = (byte) 255;
                         sbuf[i+3] = (byte) 255;
-                        sbuf[i+4] = (byte) 255;
+                        sbuf[i+4] = (byte) 254;
                     }
                 }
                 lar = frame[0];
