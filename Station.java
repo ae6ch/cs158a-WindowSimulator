@@ -83,6 +83,7 @@ public class Station {
     public byte[] nextTransmitFrame() {
         byte [] sendCandidate;
         sendCandidate = new byte[5];  // The outgoing frame is stored here as we go
+        boolean isAck = false;
         boolean isCandidate=false;    // set to true when we have a candidate in the buffer
                                     
 
@@ -125,7 +126,27 @@ public class Station {
          1. There is an acknowledgment frame that could be sent.
             ***TODO****
         */
+        int i = ((lfa + 1) % maxSeq) % rws;
+        byte temp = (byte) -1;
+       while(rbuf[i] != (byte) 255 && rbuf[i+1] == (byte) 255 && rbuf[i+2] == (byte) 255 && rbuf[i+3] == (byte) 255 && rbuf[i+4] == (byte) 255 && i < rbuf.length){
+            temp = rbuf[i];
+            System.out.printf("temp is %x",temp);
+            rbuf[i] = (byte) 255;
+            rbuf[i+1] = (byte) 255;
+            rbuf[i+2] = (byte) 255;
+            rbuf[i+3] = (byte) 255;
+            rbuf[i+4] = (byte) 255;
+            i+=5;
+       }
        
+    
+       // I don't think this works, it needs to look in rbuf to figure this out
+       if(temp != (byte)-1){
+            System.out.printf("temp is %x, sending a ack",temp);
+           byte[] ack = {temp, (byte) 255, (byte) 255, (byte) 255, (byte) 254};
+           System.out.println("sending ack");
+           return ack;
+       }
 
        /*
         2. There is a frame in the sender window whose timer went off that has not yet been 
