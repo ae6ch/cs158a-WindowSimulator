@@ -2,8 +2,8 @@ import java.util.*;
 
 public class StationTest {
     public static void main(String[] args) {
-        Station txStation = new Station(3,10,(float)0.1);
-        Station rxStation = new Station(3,10,0);
+        Station txStation = new Station(5,3,(float)0);
+        Station rxStation = new Station(5,3,(float)0);
 
 
         System.out.printf("isReady()=%b\n",txStation.isReady());
@@ -20,78 +20,28 @@ public class StationTest {
     byte[] txframe = txStation.nextTransmitFrame();
      System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
        rxStation.receiveFrame(txframe);
-    
-       byte [] rxframe = rxStation.nextTransmitFrame();
+           byte [] rxframe = rxStation.nextTransmitFrame();
        System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-
        txStation.receiveFrame(rxframe);
 
-       txframe = txStation.nextTransmitFrame();
+        txframe = txStation.nextTransmitFrame();
        System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
          rxStation.receiveFrame(txframe);
-      
-          rxframe = rxStation.nextTransmitFrame();
+              rxframe = rxStation.nextTransmitFrame();
          System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-  
          txStation.receiveFrame(rxframe);
+                                               
          txframe = txStation.nextTransmitFrame();
          System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
            rxStation.receiveFrame(txframe);
-        
-            rxframe = rxStation.nextTransmitFrame();
+                rxframe = rxStation.nextTransmitFrame();
            System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-    
            txStation.receiveFrame(rxframe);
            txframe = txStation.nextTransmitFrame();
            System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
              rxStation.receiveFrame(txframe);
-          
-              rxframe = rxStation.nextTransmitFrame();
-             System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-      
-             txStation.receiveFrame(rxframe);
-             txframe = txStation.nextTransmitFrame();
-             System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
-               rxStation.receiveFrame(txframe);
-            
-                rxframe = rxStation.nextTransmitFrame();
-               System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-        
-               txStation.receiveFrame(rxframe);
-               txframe = txStation.nextTransmitFrame();
-               System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
-                 rxStation.receiveFrame(txframe);
-              
                   rxframe = rxStation.nextTransmitFrame();
-                 System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-          
-                 txStation.receiveFrame(rxframe);
-                 txframe = txStation.nextTransmitFrame();
-                 System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
-                   rxStation.receiveFrame(txframe);
-                
-                    rxframe = rxStation.nextTransmitFrame();
-                   System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-            
-                   txStation.receiveFrame(rxframe);
-                   txframe = txStation.nextTransmitFrame();
-                   System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
-                     rxStation.receiveFrame(txframe);
-                  
-                      rxframe = rxStation.nextTransmitFrame();
-                     System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-              
-                     txStation.receiveFrame(rxframe);
-                     txframe = txStation.nextTransmitFrame();
-                     System.out.printf("txstation.nextTransmitFrame = %x %x %x %x %x\n",txframe[0],txframe[1],txframe[2],txframe[3],txframe[4]);
-                       rxStation.receiveFrame(txframe);
-                    
-                        rxframe = rxStation.nextTransmitFrame();
-                       System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
-                
-                       txStation.receiveFrame(rxframe);
-                                                        
-
-
+             System.out.printf("rxstation.nextTransmitFrame = %x %x %x %x %x\n",rxframe[0],rxframe[1],rxframe[2],rxframe[3],rxframe[4]);
+             txStation.receiveFrame(rxframe);
     }
 }

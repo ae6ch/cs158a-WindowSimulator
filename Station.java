@@ -10,7 +10,7 @@ import java.util.Arrays;
  * @author zayd
  */
 public class Station {
-    final static int TIMER = 5;
+    final static int TIMER = 10;
     int maxSeq;
     //sender
     int sws; 
@@ -58,7 +58,7 @@ public class Station {
     }
     public boolean send(int data) {
         for(int i = 0; i < timers.length; i++){
-             timers[i] -= 1;
+          //   timers[i] -= 1;
 
         }
         
@@ -87,7 +87,12 @@ public class Station {
 
         boolean isAck = false;
         boolean isCandidate=false;    // set to true when we have a candidate in the buffer
-                                    
+        
+        System.out.printf("AAA RBUF - ");
+        printbuf(rbuf);
+        System.out.printf("\nAAA SBUF - ");
+        printbuf(sbuf);
+        System.out.println("");
 
         for(int i = 0; i < timers.length; i++){
             timers[i] -= 1; 
@@ -125,7 +130,7 @@ public class Station {
        //i=0;
         /*
          1. There is an acknowledgment frame that could be sent.
-            ***TODO****
+        
         */
         int i = ((lfa + 1) % maxSeq) % rws;
         byte temp = (byte) -1;
@@ -148,6 +153,7 @@ public class Station {
        if(temp != (byte)-1){
             System.out.printf("temp is %x, sending a ack",temp);
            byte[] ack = {temp, (byte) 255, (byte) 255, (byte) 255, (byte) 254};
+           lfa=temp; // update LFA to the ACK we are sending
            System.out.println("sending ack");
            return ack;
        }
@@ -222,7 +228,7 @@ public class Station {
         Just set isCandidate back to false 
         */
        
-       if (Math.random() < propDrop) isCandidate = false;
+       //if (Math.random() < propDrop) isCandidate = false;
 
        // did we ever put a frame into sendCandidate?
        // can't just see if its 0,0,0,0,0 because thats a valid sendable frame
@@ -244,7 +250,7 @@ public class Station {
    */
     public void receiveFrame(byte[] frame) {
         for(int i = 0; i < timers.length; i++) {
-            timers[i] -= 1;
+          //  timers[i] -= 1;
         }
         //lar - Last ACK RX
         //lfs - Last Frame Sent
