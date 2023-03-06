@@ -13,7 +13,7 @@ public class Station {
     final static int TIMER = 5;
     int maxSeq;
     //sender
-    int sws;
+    int sws; 
     int lar;
     int lfs;
     byte[] sbuf;
@@ -210,20 +210,28 @@ public class Station {
         byte[] non_frame = {(byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255};
         return non_frame; 
     }
-
-    public void receiveFrame(byte[] frame){
-        for(int i = 0; i < timers.length; i++){
+    /* 
+    if the frame is an acknowledgement frame, then this methods updates the variables associated with the sender window accordingly.
+    If the frame is a data frame and its sequence number in the frame is within the receiver window, adds the frame to the Station's 
+    receiverBuffer and updates variables associated with the receiver window (including remembering enough, so that nextTransmitFrame() 
+    can send any necessary acknowledgment frames).
+   */
+    public void receiveFrame(byte[] frame) {
+        for(int i = 0; i < timers.length; i++) {
             if (timers[i] >= 0) timers[i] -= 1;
         }
-        if(frame[1] == 255 && frame[2] == 255 && frame[3] == 255 && frame[4] == 254){
-            
-            if((frame[0] > lar && frame[0] <= lfs && (lar <= lfs)) || (frame[0] > lar || frame[0] <= lfs && (lar > lfs))){
+        //lar - Last ACK RX
+        //lfs - Last Frame Sent
+        if(frame[1] == 255 && frame[2] == 255 && frame[3] == 255 && frame[4] == 254) {           //RX Frame is ACK
+            System.out.println("got a ack");
+            /* 
+             if((frame[0] > lar && frame[0] <= lfs && (lar <= lfs)) || (frame[0] > lar || frame[0] <= lfs && (lar > lfs))){                
                 
                 for(int i = 0; i < sbuf.length; i+=5){
                     
-                    if(sbuf[i] != (byte) 255)
+                if(sbuf[i] != (byte) 255)
                     if((lar > frame[0] && (sbuf[i] <= frame[0] || sbuf[i] > lar)) || (lar < frame[0] && (sbuf[i] <= frame[0] && sbuf[i] > lar))) {
-                        
+                    
                         sbuf[i] = (byte) 255;          
                         sbuf[i+1] = (byte) 255;
                         sbuf[i+2] = (byte) 255;
@@ -231,15 +239,21 @@ public class Station {
                         sbuf[i+4] = (byte) 254;
                     }
                 }
-                lar = frame[0];
-            }
+                */
+
+            lar = frame[0];        // sent lar to the ack seq just received
+            
         }
         else {
-            if((frame[0] <= lfr || frame[0] >= laf)){
-                System.out.printf("f0=%x lfr=%x laf=%x",frame[0],lfr,laf);
+            if(frame[0] == (byte)255 && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)255) {
+                // Not a ACK, Not a Non-Frame
+                // placeholder incase we want to do anything here
+                System.out.println("received non-frame");
+            }
+            else if((frame[0] <= lfr || frame[0] >= laf)) {
                 int index = frame[0] % rws;
-                //
-                System.out.printf("index is %d\n",index);
+                System.out.printf("Receiving data frame f0=%x lfr=%x laf=%x index=%d\n",frame[0],lfr,laf,index);
+
                 if(rbuf[index] == (byte) 255){
                     rbuf[index] = frame[0];
                     rbuf[index+1] = frame[1];
