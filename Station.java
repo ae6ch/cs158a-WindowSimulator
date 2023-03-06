@@ -40,6 +40,7 @@ public class Station {
             
             laf = rws;
             lfr = maxSeq-1;
+            lfa = lfr;
             lfs = lfr;
             lar = lfs;
             
@@ -58,7 +59,6 @@ public class Station {
     public boolean send(int data) {
         for(int i = 0; i < timers.length; i++){
              timers[i] -= 1;
-            if (timers[i] >= 0)   timers[i] -= 1;
 
         }
         
@@ -83,13 +83,14 @@ public class Station {
     public byte[] nextTransmitFrame() {
         byte [] sendCandidate;
         sendCandidate = new byte[5];  // The outgoing frame is stored here as we go
+        Arrays.fill(sendCandidate, (byte)255);
+
         boolean isAck = false;
         boolean isCandidate=false;    // set to true when we have a candidate in the buffer
                                     
 
         for(int i = 0; i < timers.length; i++){
             timers[i] -= 1; 
-            if (timers[i] >= 0) timers[i] -= 1; 
             System.out.printf("timer%d = %d\n",i,timers[i]);
         }
        
@@ -128,9 +129,12 @@ public class Station {
         */
         int i = ((lfa + 1) % maxSeq) % rws;
         byte temp = (byte) -1;
-       while(rbuf[i] != (byte) 255 && rbuf[i+1] == (byte) 255 && rbuf[i+2] == (byte) 255 && rbuf[i+3] == (byte) 255 && rbuf[i+4] == (byte) 255 && i < rbuf.length){
+        System.out.printf("lfa = %x i = %x\n",lfa, i);
+        //System.out.println("buffer contents..");
+        //printbuf(rbuf);
+       while(rbuf[i] != (byte) 255 && rbuf[i+1] != (byte) 255 && rbuf[i+2] != (byte) 255 && rbuf[i+3] != (byte) 255 && rbuf[i+4] != (byte) 255 && i < rbuf.length){
             temp = rbuf[i];
-            System.out.printf("temp is %x",temp);
+            System.out.printf("SENDING ACKtemp is %x",temp);
             rbuf[i] = (byte) 255;
             rbuf[i+1] = (byte) 255;
             rbuf[i+2] = (byte) 255;
@@ -171,14 +175,15 @@ public class Station {
                   System.out.printf(" - non frame"); 
                 }
                 // Expired Timer, but is a sendable frame
-                else if (sbuf[j*5] <= sendCandidate[0]) { // Pick the sendable frame with lowest seq
+                // byte is signed, need to AND to 0xff to make this work 
+                else if ((sbuf[j*5] & 0xff) <= (sendCandidate[0] & 0xff)) { // Pick the sendable frame with lowest seq
                     System.out.printf(" - frame w/seq %d",sbuf[j*5]); 
                     isCandidate=true;
                     System.arraycopy(sbuf,j*5,sendCandidate,0,5); // make the expired timer frame our candidate
                     System.out.printf(" - sendCandiate = %x %x %x %x %x",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
 
                 }
-                else System.out.printf(" - frame w/seq %d is expired but older", sbuf[j*5]); 
+                else System.out.printf(" - frame w/seq %d is expired but older %x", sbuf[j*5],sendCandidate[0]); 
             }
             System.out.printf("\n");
         }
@@ -239,31 +244,30 @@ public class Station {
    */
     public void receiveFrame(byte[] frame) {
         for(int i = 0; i < timers.length; i++) {
-            if (timers[i] >= 0) timers[i] -= 1;
+            timers[i] -= 1;
         }
         //lar - Last ACK RX
         //lfs - Last Frame Sent
-        if(frame[1] == 255 && frame[2] == 255 && frame[3] == 255 && frame[4] == 254) {           //RX Frame is ACK
+        if(frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)254) {           //RX Frame is ACK
             System.out.println("got a ack");
-            /* 
-             if((frame[0] > lar && frame[0] <= lfs && (lar <= lfs)) || (frame[0] > lar || frame[0] <= lfs && (lar > lfs))){                
+             
+             if((frame[0] > (byte)lar && frame[0] <= (byte)lfs && (lar <= lfs)) || (frame[0] > (byte)lar || frame[0] <= (byte)lfs && (lar > lfs))){                
                 
                 for(int i = 0; i < sbuf.length; i+=5){
-                    
-                if(sbuf[i] != (byte) 255)
-                    if((lar > frame[0] && (sbuf[i] <= frame[0] || sbuf[i] > lar)) || (lar < frame[0] && (sbuf[i] <= frame[0] && sbuf[i] > lar))) {
-                    
+                    if(sbuf[i] != (byte) 255)
+                    if(((byte)lar > frame[0] && (sbuf[i] <= frame[0] || sbuf[i] > (byte)lar)) || ((byte)lar < frame[0] && (sbuf[i] <= frame[0] && sbuf[i] > (byte)lar))) {
+                        System.out.printf("ACK: Removing frame %d from sbuf\n",sbuf[i]);
                         sbuf[i] = (byte) 255;          
                         sbuf[i+1] = (byte) 255;
                         sbuf[i+2] = (byte) 255;
                         sbuf[i+3] = (byte) 255;
-                        sbuf[i+4] = (byte) 254;
+                        sbuf[i+4] = (byte) 255;
                     }
                 }
-                */
-
-            lar = frame[0];        // sent lar to the ack seq just received
+                
             
+            lar = frame[0];        // sent lar to the ack seq just received
+             }
         }
         else {
             if(frame[0] == (byte)255 && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)255) {
@@ -271,8 +275,8 @@ public class Station {
                 // placeholder incase we want to do anything here
                 System.out.println("received non-frame");
             }
-            else if((frame[0] <= lfr || frame[0] >= laf)) {
-                int index = frame[0] % rws;
+            else if((frame[0] <= (byte)lfr || frame[0] >= (byte)laf)) {
+                int index = frame[0] % (byte)rws; //DOUBLECHECK MAKE SURE THIS CAST IS RIGHT
                 System.out.printf("Receiving data frame f0=%x lfr=%x laf=%x index=%d\n",frame[0],lfr,laf,index);
 
                 if(rbuf[index] == (byte) 255){
