@@ -28,6 +28,7 @@ class WindowSimulator {
         int counter=0;
         boolean notDone=true;
         int sumUtilizations=0;
+        int numSuccessfulAcks=0;
         
         while(notDone) {
             // Prints the word "Step" followed by the current value of step followed by a newline.
@@ -45,15 +46,14 @@ class WindowSimulator {
 
             // Adds the average of the senderPipe and receiverPipe utilization to sumUtilizations.
             sumUtilizations += (senderPipe.utilization()+receiverPipe.utilization())/2;
-            
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
+            System.out.printf("YYY-counter=%d num_frames=%d sender.Isready=%b receiver.isReady=%b\n",counter,num_frames,sender.isReady(),receiver.isReady());
             if ( (counter < num_frames) && sender.isReady() && receiver.isReady() ) {
-                    System.out.printf("YYY-counter=%d num_frames=%d sender.Isready=%b receiver.isReady=%b\n",counter,num_frames,sender.isReady(),receiver.isReady());
-                    while(!sender.send(counter)) {
+                if (!sender.send(counter)) {
                         System.out.println("Blocking on send");
-                        receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
-                    }
-                    counter++;
+                       receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
+                    } else
+                   counter++;
             }
             
             // It calls the sender's nextTransmitFrame(), 
@@ -88,6 +88,13 @@ class WindowSimulator {
             System.out.printf("XXX - %x = %x - 1\n",fromRXtf[0],(num_frames));
             sender.receiveFrame(frame);
             System.out.printf("XXY - %x = %x - 1\n",frame[0],(num_frames));
+
+            System.out.printf("numSuccessfulAcks = %d\n",numSuccessfulAcks);
+          
+            if ((frame[0] != (byte) 255) && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)254) {
+                numSuccessfulAcks++;
+                System.out.printf("SUPER DUPER %d\n",numSuccessfulAcks);
+            }
 
             //If this frame was an acknowledgement for the num_frames - 1th sent frame, then notDone is set to false to terminate the while loop.
             System.out.println( frame[0] == (num_frames-1));

@@ -46,13 +46,14 @@ public class Station {
             
     }
     public void printbuf(byte [] buffer) {
-                System.out.println("[sq] Payload");
         for (int idx=0; idx < sws; idx++) {
                 int packet=idx*5;
                 System.out.printf("[%d] %x %x %x %x\n",buffer[packet],buffer[packet+1],buffer[packet+2],buffer[packet+3],buffer[packet+4]);
 
         }
     }
+   
+
     public boolean isReady() {
         return (laf - lfr) <= rws;
     }
@@ -87,15 +88,15 @@ public class Station {
 
         boolean isAck = false;
         boolean isCandidate=false;    // set to true when we have a candidate in the buffer
-        
-        System.out.printf("AAA RBUF - ");
-        printbuf(rbuf);
-        System.out.printf("\nAAA SBUF - ");
+        System.out.printf("-----------------------------------------------------------------------------------------------\n");
+        System.out.printf("nextTransitframe-sbuf:\n"); 
         printbuf(sbuf);
-        System.out.println("");
+        System.out.printf("\nnextTransitframe-rbuf:\n"); 
+        printbuf(sbuf);
+        System.out.printf("-----------------------------------------------------------------------------------------------\n");
 
         for(int i = 0; i < timers.length; i++){
-            timers[i] -= 1; 
+            if (timers[i]>=0) timers[i] -= 1; 
             System.out.printf("timer%d = %d\n",i,timers[i]);
         }
        
@@ -234,7 +235,7 @@ public class Station {
        // can't just see if its 0,0,0,0,0 because thats a valid sendable frame
        if (isCandidate) { 
             // (re)set the timer to whatever we are sending to TIMER
-            timers[sendCandidate[0]] = TIMER;
+            timers[sendCandidate[0] % sws] = TIMER;
             return sendCandidate;
        }
 
