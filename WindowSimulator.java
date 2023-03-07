@@ -27,7 +27,7 @@ class WindowSimulator {
         int steps=0;
         int counter=0;
         boolean notDone=true;
-        int sumUtilizations=0;
+        float sumUtilizations=(float)0.0;
         int numSuccessfulAcks=0;
         
         while(notDone) {
@@ -35,16 +35,17 @@ class WindowSimulator {
             System.out.printf("Step %d\n",steps);
             
             // Prints "senderPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
-          //  System.out.println("senderPipe");
-          //  senderPipe.printContents();
-          //  System.out.println("");
+            System.out.println("senderPipe");
+            senderPipe.printContents();
+            System.out.println("");
             
-            // Prints "receiverPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
-           // System.out.println("receiverPipe");
-           // receiverPipe.printContents();
-           // System.out.println("");
+           //  Prints "receiverPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
+            System.out.println("receiverPipe");
+           receiverPipe.printContents();
+            System.out.println("");
 
             // Adds the average of the senderPipe and receiverPipe utilization to sumUtilizations.
+            System.out.printf("START: sendeutil=%f rxutilz=%f\n",senderPipe.utilization(),receiverPipe.utilization());
             sumUtilizations += (senderPipe.utilization()+receiverPipe.utilization())/2;
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
             System.out.printf("YYY-counter=%d num_frames=%d sender.Isready=%b receiver.isReady=%b\n",counter,num_frames,sender.isReady(),receiver.isReady());
@@ -54,6 +55,7 @@ class WindowSimulator {
                        receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
                     } else
                    counter++;
+                   System.out.printf("PPP counter=%d\n",counter);
             }
             
             // It calls the sender's nextTransmitFrame(), 
@@ -94,6 +96,7 @@ class WindowSimulator {
             if ((frame[0] != (byte) 255) && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)254) {
                 numSuccessfulAcks++;
                 System.out.printf("SUPER DUPER %d\n",numSuccessfulAcks);
+                if (numSuccessfulAcks > num_frames-1) notDone=false;
             }
 
             //If this frame was an acknowledgement for the num_frames - 1th sent frame, then notDone is set to false to terminate the while loop.
@@ -111,7 +114,7 @@ class WindowSimulator {
         } 
         // Once this loop completes, WindowSimulator should output the final value of steps 
         // and it should compute sumUtilizations/steps and output this as the average pipe utilization.
-        //System.out.printf("Steps %d\nAverage Pipe Utilization: %f\n",steps, sumUtilizations/steps);
+        System.out.printf("Steps %d\nAverage Pipe Utilization: %f%%\n",steps, (float)(sumUtilizations/steps)*100);
         
     }
 }

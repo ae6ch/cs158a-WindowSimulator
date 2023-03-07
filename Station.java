@@ -133,20 +133,25 @@ public class Station {
          1. There is an acknowledgment frame that could be sent.
         
         */
-        int i = ((lfa + 1) % maxSeq) % rws;
+        //int i = ((lfa + 1) % maxSeq) % rws;
+        int i = 0;
+      
         byte temp = (byte) -1;
-        System.out.printf("lfa = %x i = %x\n",lfa, i);
         //System.out.println("buffer contents..");
         //printbuf(rbuf);
-       while(rbuf[i] != (byte) 255 && rbuf[i+1] != (byte) 255 && rbuf[i+2] != (byte) 255 && rbuf[i+3] != (byte) 255 && rbuf[i+4] != (byte) 255 && i < rbuf.length){
-            temp = rbuf[i];
-            System.out.printf("SENDING ACKtemp is %x",temp);
-            rbuf[i] = (byte) 255;
-            rbuf[i+1] = (byte) 255;
-            rbuf[i+2] = (byte) 255;
-            rbuf[i+3] = (byte) 255;
-            rbuf[i+4] = (byte) 255;
-            i+=5;
+       for (i=0; i<rbuf.length; i+=5) {
+            if(rbuf[i] != (byte) 255 && rbuf[i+1] != (byte) 255 && rbuf[i+2] != (byte) 255 && rbuf[i+3] != (byte) 255 && rbuf[i+4] != (byte) 255) {
+                temp = rbuf[i];
+                 System.out.printf("SENDING ACKtemp is %x",temp);
+              rbuf[i] = (byte) 255;
+              rbuf[i+1] = (byte) 255;
+              rbuf[i+2] = (byte) 255;
+                rbuf[i+3] = (byte) 255;
+             rbuf[i+4] = (byte) 255;
+                i+=5;
+             //System.out.printf("FUCK lfa = %x i = %x\n",lfa, i);
+
+            }
        }
        
     
@@ -183,6 +188,7 @@ public class Station {
                 }
                 // Expired Timer, but is a sendable frame
                 // byte is signed, need to AND to 0xff to make this work 
+         
                 else if ((sbuf[j*5] & 0xff) <= (sendCandidate[0] & 0xff)) { // Pick the sendable frame with lowest seq
                     System.out.printf(" - frame w/seq %d",sbuf[j*5]); 
                     isCandidate=true;
@@ -236,6 +242,7 @@ public class Station {
        if (isCandidate) { 
             // (re)set the timer to whatever we are sending to TIMER
             timers[sendCandidate[0] % sws] = TIMER;
+            System.out.printf("return - sendCandiate = %x %x %x %x %x",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
             return sendCandidate;
        }
 
@@ -282,10 +289,12 @@ public class Station {
                 // placeholder incase we want to do anything here
                 System.out.println("received non-frame");
             }
-            else if((frame[0] <= (byte)lfr || frame[0] >= (byte)laf)) {
-                int index = frame[0] % (byte)rws; //DOUBLECHECK MAKE SURE THIS CAST IS RIGHT
-                System.out.printf("Receiving data frame f0=%x lfr=%x laf=%x index=%d\n",frame[0],lfr,laf,index);
-
+            else if((((int)frame[0] & 0xff) <= (byte)lfr || frame[0] >= (byte)laf)) {
+                int index = frame[0] % rws; //DOUBLECHECK MAKE SURE THIS CAST IS RIGHT
+               index *= 5;
+                System.out.printf("Receiving data frame frame0=%x lfr=%x laf=%x index=%d\n",frame[0],lfr,laf,index);
+                
+                System.out.printf("Receiving data frame writing frame to %d\n",index);
                 if(rbuf[index] == (byte) 255){
                     rbuf[index] = frame[0];
                     rbuf[index+1] = frame[1];
