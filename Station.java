@@ -10,8 +10,8 @@ import java.util.Arrays;
  * @author zayd
  */
 public class Station {
-    static int TIMER_MAX = 250;
-    static int TIMER_MIN = 10;
+    static int TIMER_MAX = 25;
+    static int TIMER_MIN = 3;
     static int TIMER = 10;  //Starting 5, but we adjust on the fly
     int maxSeq;
     //sender
@@ -61,7 +61,6 @@ public class Station {
     }
     public boolean send(int data) {
 
-    //    System.out.printf("BBB CURRENT VALUE OF TIMER=%d",TIMER);
         for(int i = 0; i < timers.length; i++){
      //       System.out.printf(" %d",timers[i]);
         }
@@ -78,14 +77,13 @@ public class Station {
             sbuf[index+2] = temp[1];
             sbuf[index+3] = temp[2];
             sbuf[index+4] = temp[3];
-            
-            //TIMER++;                        /* If we are blocking increase timer up to TIMER_MAX */
-            //if (TIMER > TIMER_MAX) TIMER=TIMER_MAX;
+          
+           
             return true;
         } 
-        //TIMER--;                  /* Reduce timer, as low as TIMER_MIN if we can sent packets */
-        //if (TIMER < TIMER_MIN) TIMER=TIMER_MIN;
-        
+       
+            TIMER++;                        /* If we are blocking increase timer up to TIMER_MAX */
+            if (TIMER > TIMER_MAX) TIMER=TIMER_MAX;
         return false;
     }
 
@@ -102,8 +100,10 @@ public class Station {
      //   System.out.printf("\nnextTransitframe-rbuf:\n"); 
       //  printbuf(sbuf);
       //  System.out.printf("-----------------------------------------------------------------------------------------------\n");
-
-        for(int i = 0; i < timers.length; i++){
+      
+  
+      
+      for(int i = 0; i < timers.length; i++){
             if (timers[i]>=0) timers[i] -= 1; 
 //System.out.printf("timer%d = %d\n",i,timers[i]);
         }
@@ -169,6 +169,8 @@ public class Station {
            byte[] ack = {temp, (byte) 255, (byte) 255, (byte) 255, (byte) 254};
            lfa=temp; // update LFA to the ACK we are sending
           // System.out.println("sending ack");
+          TIMER-=5;                  /* Reduce timer, as low as TIMER_MIN if we can sent packets */
+          if (TIMER < TIMER_MIN) TIMER=TIMER_MIN;
            return ack;
        }
 
@@ -281,7 +283,6 @@ public class Station {
                 for(int i = 0; i < sbuf.length; i+=5){
                     if(sbuf[i] != (byte) 255)
                     if(((byte)lar > frame[0] && (sbuf[i] <= frame[0] || sbuf[i] > (byte)lar)) || ((byte)lar < frame[0] && (sbuf[i] <= frame[0] && sbuf[i] > (byte)lar))) {
-                        System.out.printf("ACK: Removing frame %d from sbuf lar was %d\n",sbuf[i],lar);
                         sbuf[i] = (byte) 255;          
                         sbuf[i+1] = (byte) 255;
                         sbuf[i+2] = (byte) 255;
