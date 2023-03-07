@@ -45,24 +45,24 @@ class WindowSimulator {
             System.out.println("");
 
             // Adds the average of the senderPipe and receiverPipe utilization to sumUtilizations.
-            System.out.printf("START: sendeutil=%f rxutilz=%f\n",senderPipe.utilization(),receiverPipe.utilization());
+      //      System.out.printf("START: sendeutil=%f rxutilz=%f\n",senderPipe.utilization(),receiverPipe.utilization());
             sumUtilizations += (senderPipe.utilization()+receiverPipe.utilization())/2;
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
-            System.out.printf("YYY-counter=%d num_frames=%d sender.Isready=%b receiver.isReady=%b\n",counter,num_frames,sender.isReady(),receiver.isReady());
+     //       System.out.printf("YYY-counter=%d num_frames=%d sender.Isready=%b receiver.isReady=%b\n",counter,num_frames,sender.isReady(),receiver.isReady());
             if ( (counter < num_frames) && sender.isReady() && receiver.isReady() ) {
                 if (!sender.send(counter)) {
                         System.out.println("Blocking on send");
                        receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
                     } else
                    counter++;
-                   System.out.printf("PPP counter=%d\n",counter);
+          //         System.out.printf("PPP counter=%d\n",counter);
             }
             
             // It calls the sender's nextTransmitFrame(), 
             // takes the byte array returned and calls senderPipe's addFrame method with it.
             // It takes the byte array returned from addFrame, and calls receiver's receiveFrame method using it.
             byte [] fromt=sender.nextTransmitFrame();
-            System.out.printf("fromt=%x %x %x %x %x\n",fromt[0],fromt[1],fromt[2],fromt[3],fromt[4]);
+        //    System.out.printf("fromt=%x %x %x %x %x\n",fromt[0],fromt[1],fromt[2],fromt[3],fromt[4]);
             receiver.receiveFrame(senderPipe.addFrame(fromt));
             //receiver.receiveFrame(fromt);
  // Prints "senderPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
@@ -87,20 +87,20 @@ class WindowSimulator {
             //System.out.printf("fromRXtf=%x %x %x %x %x\n",fromRXtf[0],fromRXtf[1],fromRXtf[2],fromRXtf[3],fromRXtf[4]);
             byte[] frame=receiverPipe.addFrame(fromRXtf);
 
-            System.out.printf("XXX - %x = %x - 1\n",fromRXtf[0],(num_frames));
+         //   System.out.printf("XXX - %x = %x - 1\n",fromRXtf[0],(num_frames));
             sender.receiveFrame(frame);
-            System.out.printf("XXY - %x = %x - 1\n",frame[0],(num_frames));
+        //    System.out.printf("XXY - %x = %x - 1\n",frame[0],(num_frames));
 
-            System.out.printf("numSuccessfulAcks = %d\n",numSuccessfulAcks);
+       //     System.out.printf("BBB numSuccessfulAcks = %d\n",numSuccessfulAcks);
           
             if ((frame[0] != (byte) 255) && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)254) {
                 numSuccessfulAcks++;
-                System.out.printf("SUPER DUPER %d\n",numSuccessfulAcks);
+        //        System.out.printf("SUPER DUPER %d\n",numSuccessfulAcks);
                 if (numSuccessfulAcks > num_frames-1) notDone=false;
             }
 
             //If this frame was an acknowledgement for the num_frames - 1th sent frame, then notDone is set to false to terminate the while loop.
-            System.out.println( frame[0] == (num_frames-1));
+          //  System.out.println( frame[0] == (num_frames-1));
             if ((frame[0] == (num_frames-1) ) && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)254) {
                 notDone=false;
 
