@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -10,252 +6,247 @@ import java.util.Arrays;
  * @author zayd
  */
 public class Station {
-    static int TIMER_MAX = 25;
-    static int TIMER_MIN = 3;
-    static int TIMER = 10;  //Starting 5, but we adjust on the fly
-    int maxSeq;
+
+    static int TIMER = 25;  
+    int sentFramesTotal=0;
+    int rxFramesTotal=0;
+    int sentAcksTotal=0;
+    int numberOfFramesAck=0;
+    int numSuccessfulAcks=0;
+    byte maxSeq;
     //sender
-    int sws; 
-    int lar;
-    int lfs;
-    byte[] sbuf;
-    int[] timers;
+    byte sws;        // Sender Window Size - the maximum number of unacknowledged frames that the sender can transmit. We will choose the SWS to try to keep the pipe as full as possible
+    byte lar;        // Last Ack Received - the sequence number of the last frame acknowledged. 
+    byte lfs;        // last frame sent (LFS) -- the sequence number of the last frame sent
+    byte[] senderBuffer;
+    int[] timers;   
+    int[] age;      // Holds the age of a frame in the buffer location
+    int[] resends;  // Number of times the frame stored have been resent 
+    byte SeqNumToAck;
     
     //reciever
-    int rws;
-    int laf;
-    int lfr;
-    int lfa;
-    byte[] rbuf;
+    byte rws;        // receive window size (RWS) -- maximum number of out of order frame the receiver is willing to receive
+    byte laf;        // largest acceptable frame (LAF) -- the highest sequence number that the receiver is currently willing to accept.
+    byte lfr;        // last frame received (LFR) -- the sequence number of last frame received.
+    byte[] receiverBuffer;
 
     float propDrop;
-        public Station(int sws, int rws, float propDrop) {
-            this.maxSeq = 2*sws;
-            this.sws = sws;
-            this.rws = rws;
-            this.propDrop = propDrop;
-            sbuf = new byte[5*sws];
-            timers = new int[sws];
-            rbuf = new byte[5*rws];
-            Arrays.fill(sbuf, (byte)255);
-            Arrays.fill(rbuf, (byte)255);
-            
-            laf = rws;
-            lfr = maxSeq-1;
-            lfa = lfr;
-            lfs = lfr;
-            lar = lfs;
-            
-    }
-    public void printbuf(byte [] buffer) {
-        for (int idx=0; idx < sws; idx++) {
-                int packet=idx*5;
-                System.out.printf("[%d] %x %x %x %x\n",buffer[packet],buffer[packet+1],buffer[packet+2],buffer[packet+3],buffer[packet+4]);
+    public Station(byte sws, byte rws, float propDrop) {
+        this.maxSeq = (byte)(2*sws);
+        this.sws = sws;
+        this.rws = rws;
+        this.propDrop = propDrop;
+        senderBuffer = new byte[5*sws];
+        timers = new int[sws];
+        age = new int[sws];     
+        resends = new int[sws]; 
+        receiverBuffer = new byte[5*rws];
+        Arrays.fill(senderBuffer, (byte)255);
+        Arrays.fill(receiverBuffer, (byte)255);
+        Arrays.fill(timers, (byte) -1);
+        Arrays.fill(age, (byte) -1);
+        Arrays.fill(resends, (byte) 0);
 
-        }
-    }
-   
 
-    public boolean isReady() {
-        return (laf - lfr) <= rws;
+        laf = rws;          // The receiver maintains that LAF - LFR ≤ RWS  
+        lfr = -1;
+        lfs = -1;
+        lar = -1;
+        SeqNumToAck = -1;
+            
     }
+
+    public boolean isReady() {      // returns whether the Station can receive a new frame to queue - free buffer space, and lfs - lar <= sws
+      //  if (lfs - lar <= sws) {  
+           // for (int i=0; i<receiverBuffer.length; i+=5) { // returns true once we find one free entry in the receiverBuffer 
+           //     if ((receiverBuffer[i] == (byte)255) && (receiverBuffer[i+1] == (byte)255) && (receiverBuffer[i+2] == (byte)255) && (receiverBuffer[i+3] == (byte)255) && (receiverBuffer[i+4] == (byte)255))
+                    return true; // in window and buffer space
+           //     }
+       // }
+     //   return false;  // not in window, and/or no buffer space
+    }
+
     public boolean send(int data) {
+        byte[] sendTemp = ByteBuffer.allocate(4).putInt(data).array();
+        for(int ia = 0; ia < age.length; ia++){    // Increase age of all frames that are active, decrease all timers
+            age[ia]++;
 
-        for(int i = 0; i < timers.length; i++){
-     //       System.out.printf(" %d",timers[i]);
+         // if (timers[ia]>=0) timers[ia]--;
         }
-        System.out.printf("\n");
+
+        int i;
         
-        //cite this - why, we're not copying code just using a function the waymit was intended?
-        byte[] temp = ByteBuffer.allocate(4).putInt(data).array();
-        
-        lfs = (lfs + 1) % maxSeq;
-        int index = (lfs % sws)*5;
-        if(sbuf[index] == (byte) 255){
-            sbuf[index] = (byte) lfs;
-            sbuf[index+1] = temp[0];
-            sbuf[index+2] = temp[1];
-            sbuf[index+3] = temp[2];
-            sbuf[index+4] = temp[3];
-          
-           
+        for (i=0; i<senderBuffer.length; i+=5) { // find the first free sendbuffer entry
+            if ((senderBuffer[i] == (byte)255) && (senderBuffer[i+1] == (byte)255) && (senderBuffer[i+2] == (byte)255) && (senderBuffer[i+3] == (byte)255) && (senderBuffer[i+4] == (byte)255)) {
+                lfs = (byte) ((lfs+1) % maxSeq);                    // Increase SeqNum, wrap to SWS
+                System.out.printf("new LFS is %x\n",lfs);
+                senderBuffer[i] = lfs;
+                senderBuffer[i+1] = sendTemp[0];
+                senderBuffer[i+2] = sendTemp[1];
+                senderBuffer[i+3] = sendTemp[2];
+                senderBuffer[i+4] = sendTemp[3];
+                System.out.printf("A  Senderbuffer = %d %d %d %d %d\n",senderBuffer[i],senderBuffer[i+1],senderBuffer[i+2],senderBuffer[i+3],senderBuffer[i+4]);
+                timers[i/5 ] = TIMER;         // Queue Timer
+                age[i/5] = 0;                // Set Age to 0
+                resends[i/5] = -1;            // We've never resent this frame
             return true;
+            }
         } 
        
-            TIMER++;                        /* If we are blocking increase timer up to TIMER_MAX */
-            if (TIMER > TIMER_MAX) TIMER=TIMER_MAX;
-        return false;
+        return false; 
     }
 
     public byte[] nextTransmitFrame() {
         byte [] sendCandidate;
         sendCandidate = new byte[5];  // The outgoing frame is stored here as we go
         Arrays.fill(sendCandidate, (byte)255);
-
-        boolean isAck = false;
         boolean isCandidate=false;    // set to true when we have a candidate in the buffer
-     //   System.out.printf("-----------------------------------------------------------------------------------------------\n");
-     //   System.out.printf("nextTransitframe-sbuf:\n"); 
-     //   printbuf(sbuf);
-     //   System.out.printf("\nnextTransitframe-rbuf:\n"); 
-      //  printbuf(sbuf);
-      //  System.out.printf("-----------------------------------------------------------------------------------------------\n");
-      
-  
-      
-      for(int i = 0; i < timers.length; i++){
-            if (timers[i]>=0) timers[i] -= 1; 
-//System.out.printf("timer%d = %d\n",i,timers[i]);
-        }
-       
-      // int i = ((lfa + 1) % maxSeq) % rws;
-      // byte temp = (byte) 255;
-       //255 might be a seq num for a real frame, check underneath commented lines
-      
 
-      /* why is nextTransmitFrame writing into rbuf?
-      while(rbuf[i] != (byte) 255 && i < rbuf.length){
-            temp = rbuf[i];
-            System.out.printf("temp is %x",temp);
-            rbuf[i] = (byte) 255;
-            rbuf[i+1] = (byte) 255;
-            rbuf[i+2] = (byte) 255;
-            rbuf[i+3] = (byte) 255;
-            rbuf[i+4] = (byte) 255;
-            i+=5;
-       }
-       */
-    
-       /* I don't think this works, it needs to look in rbuf to figure this out
-       if(temp != (byte)255){
-            System.out.printf("temp is %x, sending a ack",temp);
-           byte[] ack = {temp, (byte) 255, (byte) 255, (byte) 255, (byte) 254};
-           System.out.println("sending ack");
-           return ack;
-       }
-       */
-       
-       //temp = (byte) 255;
-       //i=0;
+     //   System.out.printf("Sendbuffer:\n");
+     //   for (int i = 0; i<senderBuffer.length; i++) {
+     //       System.out.printf("%d ",senderBuffer[i]);
+     //   }
+     //   System.out.printf("\n");
+
+        System.out.printf("Timers ");
+        for(int i = 0; i < timers.length; i++){ // Decrease timers that are active
+                timers[i]--;
+                 System.out.printf(" %d",timers[i]);
+                if (timers[i] < -1) timers[i] = TIMER;
+                
+                
+        }
+        System.out.printf("\nAge ");
+        for(int i = 0; i < age.length; i++){    // Increase age of all frames that are active
+                age[i]++;
+                System.out.printf(" %d",age[i]);
+
+        }
+        System.out.printf("\n");
+        System.out.printf("Senderbuffer: ");
+        for (int ic = 0; ic<senderBuffer.length; ic++) {
+            System.out.printf("%x ",senderBuffer[ic]);
+        }
+        System.out.printf("\n");
+
         /*
          1. There is an acknowledgment frame that could be sent.
-        
-        */
-        //int i = ((lfa + 1) % maxSeq) % rws;
-        int i = 0;
-      
-        byte temp = (byte) -1;
-        //System.out.println("buffer contents..");
-        //printbuf(rbuf);
-       for (i=0; i<rbuf.length; i+=5) {
-            if(rbuf[i] != (byte) 255 && rbuf[i+1] != (byte) 255 && rbuf[i+2] != (byte) 255 && rbuf[i+3] != (byte) 255 && rbuf[i+4] != (byte) 255) {
-                temp = rbuf[i];
-          //       System.out.printf("SENDING ACKtemp is %x",temp);
-              rbuf[i] = (byte) 255;
-              rbuf[i+1] = (byte) 255;
-              rbuf[i+2] = (byte) 255;
-                rbuf[i+3] = (byte) 255;
-             rbuf[i+4] = (byte) 255;
-                i+=5;
-    
-
-            }
-       }
-       
-    
-       // I don't think this works, it needs to look in rbuf to figure this out
-       if(temp != (byte)-1){
-          //  System.out.printf("temp is %x, sending a ack",temp);
-           byte[] ack = {temp, (byte) 255, (byte) 255, (byte) 255, (byte) 254};
-           lfa=temp; // update LFA to the ACK we are sending
-          // System.out.println("sending ack");
-          TIMER-=5;                  /* Reduce timer, as low as TIMER_MIN if we can sent packets */
-          if (TIMER < TIMER_MIN) TIMER=TIMER_MIN;
-           return ack;
-       }
-
-       /*
         2. There is a frame in the sender window whose timer went off that has not yet been 
         resent. 
         3. Choose the oldest such frame that has not been resent. After choosing this 
         frame reset its timer.
+        
         4. There is a frame in the sender window that has not yet been sent. 
         Choose the oldest such frame and start a timer for it.
         */
+        if (SeqNumToAck > -1) {             // We have a frame to ack
+            System.out.printf("Send ACK %d\n",SeqNumToAck);
+            sendCandidate[0] = SeqNumToAck;
+            sendCandidate[1] = (byte) 255;
+            sendCandidate[2] = (byte) 255;
+            sendCandidate[3] = (byte) 255;
+            sendCandidate[4] = (byte) 254;
+            isCandidate=true;
+           //lfr=SeqNumToAck;
+           // laf=(byte) ((lfr + rws) % rws); // Account for wrap
+            SeqNumToAck = -1;
 
-     
-      
-      
-        for(int j = 0; j < timers.length; j++){
-       // System.out.printf("walking timer %d\n",j);
-        //            if((timers[j] <= 0) && (sbuf[j*5] < temp)){
-            //if((timers[j] <= 0) && (sbuf[j*5] < temp)){
-            if(timers[j] <= 0)  {
-            //    System.out.printf("BBB - expired");
-                // Expired Timer, but non-frame  
-                if ((sbuf[j*5]==(byte)  255) && (sbuf[j*5+1]==(byte)  255) && (sbuf[j*5+2]==(byte)  255) && (sbuf[j*5+3]==(byte)  255) &&(sbuf[j*5+4]==(byte) 255)) {
-              //    System.out.printf(" - non frame"); 
-                }
-                // Expired Timer, but is a sendable frame
-                // byte is signed, need to AND to 0xff to make this work 
-         
-                else if ((sbuf[j*5] & 0xff) <= (sendCandidate[0] & 0xff)) { // Pick the sendable frame with lowest seq
-                  // System.out.printf("BBB - frame w/seq %d",sbuf[j*5]); 
-                    isCandidate=true;
-                    System.arraycopy(sbuf,j*5,sendCandidate,0,5); // make the expired timer frame our candidate
-                  //  System.out.printf("BBB - sendCandiate = %x %x %x %x %x",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
-
-                }
-               // else System.out.printf("BBB - frame w/seq %d is expired but older %x", sbuf[j*5],sendCandidate[0]); 
-            }
-          //  System.out.printf("\n");
-        }
-    /* 
-       if(temp != (byte)255){
-           byte[] resend = {sbuf[i], sbuf[i+1], sbuf[i+2], sbuf[i+3], sbuf[i+4]};
-           timers[i/5] = TIMER;
-           System.out.println("resending something");
-           return resend;
-       }
-    */
-       
-       /* 
-              System.out.printf("sbuf.length=%d\n",sbuf.length);
-       //while(rbuf[i] == (byte) 255  && i < rbuf.length){
-        i = 0;
-        while(i < sbuf.length){
-            System.out.printf("i=%d\n",i);
-           if (sbuf[i] == (byte) 255) i+=5;
-       }
+        }  
     
-        System.out.printf("before send i=%d\n",i);
-       if(i < sbuf.length){
-           byte[] send = {sbuf[i], sbuf[i+1], sbuf[i+2], sbuf[i+3], sbuf[i+4]};
-           timers[i/5] = TIMER;
-           System.out.println("sending a packet");
-           return send;
-       }
-       */
+        if (!(isCandidate)) {           // Don't do this if we have a ACK pending transmision
+            System.out.printf("No Pending ack\n");
+            int oldestAge=0;
+            int oldestResendAge=0;
+            int oldestResendAgePos=-1;
+            int oldestAgePos=-1;
+
+            for(int i = 0; i < timers.length; i++){ 
+                int ibuf=i*5; 
+                if (timers[i] == 0) {       // Frame stored in i has expired timer
+                    System.out.printf("Timer %d expired\n",i);
+                    if ((senderBuffer[ibuf] == (byte)255) && (senderBuffer[ibuf+1] == (byte)255) && (senderBuffer[ibuf+2] == (byte)255) && (senderBuffer[ibuf+3] == (byte)255) && (senderBuffer[ibuf+4] == (byte)255)) {
+                        // Frame is a non-frame, ignore
+                        timers[i] = TIMER;
+                        age[i]++;
+                    } 
+                    if ((senderBuffer[ibuf+1] == (byte)255) && (senderBuffer[ibuf+2] == (byte)255) && (senderBuffer[ibuf+3] == (byte)255) && (senderBuffer[ibuf+4] == (byte)254)) {
+                        // Frame is a ack, set to non-frame and ignore
+                        // 
+                        senderBuffer[ibuf]=(byte) 255;
+                        senderBuffer[ibuf+4]=(byte) 255;
+                        timers[i] = TIMER;
+                         age[i]++;
+                     }
+
+                    if ((resends[i] >= 1) && (isCandidate==false)) {    // #2-3 Find oldest frame that has been resent, and then resend it again             
+                        System.out.printf("Looking at %d for age=%d and oldestresendage=%d\n",i,age[i],oldestResendAge);
+                        System.out.printf("is %d greater then %d?\n",i,age[i],oldestResendAge);
+                        if (age[i] > oldestResendAge) {
+                            System.out.println("resend");
+                            oldestResendAge=age[i];
+                            oldestResendAgePos=i;
+                            sendCandidate[0] = senderBuffer[ibuf];
+                            sendCandidate[1] = senderBuffer[ibuf+1];
+                            sendCandidate[2] = senderBuffer[ibuf+2];
+                            sendCandidate[3] = senderBuffer[ibuf+3];
+                            sendCandidate[4] = senderBuffer[ibuf+4];
+                            isCandidate=true;                   
+                            timers[i] = TIMER;
+                            age[i]++;
+                        }
+                    } 
+                    if ((resends[i] <= -1) && (isCandidate==false)) {     // #4 ind oldest frame that has never been sent, and then send it
+                         System.out.printf("Looking at %d for non resends age=%d and oldestAge=%d\n",i,age[i],oldestAge);
+
+                         System.out.printf("is %d greater then %d?\n",i,age[i],oldestAge);
+                        if (age[i] > oldestAge) {
+                            System.out.println("not resend");
+                            oldestAge=age[i];
+                            oldestAgePos=i;
+                            sendCandidate[0] = senderBuffer[ibuf];
+                            sendCandidate[1] = senderBuffer[ibuf+1];
+                            sendCandidate[2] = senderBuffer[ibuf+2];
+                            sendCandidate[3] = senderBuffer[ibuf+3];
+                            sendCandidate[4] = senderBuffer[ibuf+4];
+                            isCandidate=true;
+                            timers[i] = TIMER;
+                            age[i]++;
+                            //System.out.printf("A 1 sendCandidate = %d %d %d %d %d\n",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
+
+                        }
+                    }
+                }
+            }
+            if (isCandidate) {  // If we now have a frame to send and its a resend, need to increment resend for the frame
+                if (oldestResendAge > 0) {  // This is a resend
+                resends[oldestResendAgePos]++;
+                timers[oldestResendAgePos] = TIMER;
+                }
+                if (oldestAge > 0) {  // This is a not resend
+                    timers[oldestAgePos] = TIMER;
+                    resends[oldestAgePos]=0;
+                }
+                
+            }
+
+        }
        
         /*
         After choosing the frame according to the above, nextTransmitFrame() generates a 
         random number between 0 and 1. If it is less than propDrop, nextTransmitFrame() 
         returns the non-frame frame; otherwise, it returns the frame chosen as above.
 
-        Just set isCandidate back to false 
         */
        
-       if (Math.random() < propDrop) {
-      //  System.out.printf("RANDOMLY DROPPING STUFF\n");
-        isCandidate = false;
-
+       if ((float) Math.random() < propDrop) { 
+         System.out.printf("*** DROP FRAME ***\n");
+        byte[] non_frame = {(byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255};
+        return non_frame; 
        }
-       // did we ever put a frame into sendCandidate?
-       // can't just see if its 0,0,0,0,0 because thats a valid sendable frame
+
        if (isCandidate) { 
-            // (re)set the timer to whatever we are sending to TIMER
-            timers[sendCandidate[0] % sws] = TIMER;
-      //      System.out.printf("BBB return - sendCandiate = %x %x %x %x %x\n",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
+       // System.out.printf("A 2 sendCandidate = %d %d %d %d %d\n",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
+
             return sendCandidate;
        }
 
@@ -263,6 +254,8 @@ public class Station {
         byte[] non_frame = {(byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255};
         return non_frame; 
     }
+
+
     /* 
     if the frame is an acknowledgement frame, then this methods updates the variables associated with the sender window accordingly.
     If the frame is a data frame and its sequence number in the frame is within the receiver window, adds the frame to the Station's 
@@ -270,51 +263,94 @@ public class Station {
     can send any necessary acknowledgment frames).
    */
     public void receiveFrame(byte[] frame) {
-        for(int i = 0; i < timers.length; i++) {
-          //  timers[i] -= 1;
-        }
-        //lar - Last ACK RX
-        //lfs - Last Frame Sent
-        if(frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)254) {           //RX Frame is ACK
-        //    System.out.println("got a ack");
-             
-             if((frame[0] > (byte)lar && frame[0] <= (byte)lfs && (lar <= lfs)) || (frame[0] > (byte)lar || frame[0] <= (byte)lfs && (lar > lfs))){                
-                
-                for(int i = 0; i < sbuf.length; i+=5){
-                    if(sbuf[i] != (byte) 255)
-                    if(((byte)lar > frame[0] && (sbuf[i] <= frame[0] || sbuf[i] > (byte)lar)) || ((byte)lar < frame[0] && (sbuf[i] <= frame[0] && sbuf[i] > (byte)lar))) {
-                        sbuf[i] = (byte) 255;          
-                        sbuf[i+1] = (byte) 255;
-                        sbuf[i+2] = (byte) 255;
-                        sbuf[i+3] = (byte) 255;
-                        sbuf[i+4] = (byte) 255;
-                        lar = frame[0];        // sent lar to the ack seq just received
+        byte SeqNum=frame[0];
+
+
+        System.out.printf("lfr=%d laf=%d receive frame %d %d %d %d %d\n",lfr,laf,frame[0],frame[1],frame[2],frame[3],frame[4]);
+        if ((frame[0] == (byte)255) && (frame[1] == (byte)255) && (frame[2] == (byte)255) && (frame[3] == (byte)255) && (frame[4] == (byte)255)) { //Frame is non-frame
+                System.out.println("got a non-frame");
+                return;
+        } 
+
+        if (laf > maxSeq) 
+        if (((SeqNum  <= lfr) || ((SeqNum) > laf)))
+       if ((laf>maxSeq) && (SeqNum >= (laf-(lfr+1))))
+        {
+            System.out.printf("got a out of window frame %d for %d and %d\n",SeqNum,lfr,laf);
+           // this frame is out of window and is discarded
+           return;
+        }    
+
+        if ((frame[1] == (byte)255) && (frame[2] == (byte)255) && (frame[3] == (byte)255) && (frame[4] == (byte)254)) { //Frame is ACK
+            System.out.printf("got a ack-frame %d %d %d\n",SeqNum,lfr,laf);
+           // if ((SeqNum > lar) && (SeqNum < lfs)) 
+            if(true)  { // ack is in window
+                System.out.println("got a in window ack-frame");
+                numSuccessfulAcks++;
+                lar=SeqNum;
+
+                System.out.printf("Sendbuffer BEFORE:\n");
+                for (int ic = 0; ic<senderBuffer.length; ic++) {
+                    System.out.printf("%x ",senderBuffer[ic]);
+                }
+                System.out.printf("\n");
+
+
+                // find the frame and remove it from the sender buffer
+                for (int io=0; io<senderBuffer.length; io+=5) {    
+                    System.out.printf("clearing sb, i=%d lar=%d\n",io,lar);
+                    if ((senderBuffer[io] == lar)) {
+                        senderBuffer[io] = (byte) 255;
+                        senderBuffer[io+1] = (byte) 255;
+                        senderBuffer[io+2] = (byte) 255;
+                        senderBuffer[io+3] = (byte) 255;
+                        senderBuffer[io+4] = (byte) 255;
+                        age[io/5] = -1;
                     }
-                }
                 
-            
-             }
-        }
-        else {
-            if(frame[0] == (byte)255 && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)255) {
-                // Not a ACK, Not a Non-Frame
-                // placeholder incase we want to do anything here
-             //   System.out.println("received non-frame");
-            }
-            else if((((int)frame[0] & 0xff) <= (byte)lfr || frame[0] >= (byte)laf)) {
-                int index = frame[0] % rws; //DOUBLECHECK MAKE SURE THIS CAST IS RIGHT
-               index *= 5;
-          //      System.out.printf("Receiving data frame frame0=%x lfr=%x laf=%x index=%d\n",frame[0],lfr,laf,index);
-                
-           //     System.out.printf("Receiving data frame writing frame to %d\n",index);
-                if(rbuf[index] == (byte) 255){
-                    rbuf[index] = frame[0];
-                    rbuf[index+1] = frame[1];
-                    rbuf[index+2] = frame[2];
-                    rbuf[index+3] = frame[3];
-                    rbuf[index+4] = frame[4];
                 }
+
+                System.out.printf("Sendbuffer AFTER:\n");
+                for (int ib = 0; ib<senderBuffer.length; ib++) {
+                     System.out.printf("%x ",senderBuffer[ib]);
+                }
+                System.out.printf("\n");
+                    
             }
+            return;
         }
+        
+       // if (laf > maxSeq) 
+      //  if (((SeqNum  <= lfr) || ((SeqNum) > laf)))
+       //     if ((laf>maxSeq) && (SeqNum >= (laf-(lfr+1))))
+       //{
+       //     System.out.printf("got a out of window frame %d for %d and %d\n",SeqNum,lfr,laf);
+       //     // this frame is out of window and is discarded
+        //    return;
+      //  } 
+    
+        // The Frame is in the window
+        System.out.printf("got a in window frame %d for %d and %d",SeqNum,lfr,laf);
+
+        // Receive frame and put it into buffer
+        for (int i=0; i<receiverBuffer.length; i+=5)  { // find the first free receiverBuffer entry  
+            if ((receiverBuffer[i] != (byte)255) && (receiverBuffer[i+1] != (byte)255) && (receiverBuffer[i+2] != (byte)255) && (receiverBuffer[i+3] != (byte)255) && (receiverBuffer[i+4] != (byte)255)) {
+                //receiverBuffer[i] = frame[0];
+                //receiverBuffer[i+1] = frame[1];
+                //receiverBuffer[i+2] = frame[2];
+                //receiverBuffer[i+3] = frame[3];
+                // receiverBuffer[i+4] = frame[4];
+            }
+            SeqNumToAck=SeqNum;
+            System.out.printf("ZZZ BEFORE LFR lfr=%d laf=%d receive frame %d %d %d %d %d\n",lfr,laf,frame[0],frame[1],frame[2],frame[3],frame[4]);
+
+            lfr=SeqNumToAck;
+
+            laf=(byte)(lfr+1+rws);
+            System.out.printf("ZZZ AFTER LAF lfr=%d laf=%d receive frame %d %d %d %d %d\n",lfr,laf,frame[0],frame[1],frame[2],frame[3],frame[4]);
+
+
+        }    
+    
     }
 }

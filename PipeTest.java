@@ -12,8 +12,8 @@ public class PipeTest {
         System.out.println("");
         
         byte[] tmpframe={1,2,3,4,5};
-        byte[] tmpframe2={0xa,0xa,0xa,0xa,0xa};
-        byte[] tmpframe3={0xb,0xb,0xb,0xb,0xb};
+        byte[] tmpframe2={1,2,3,4,5};
+        byte[] tmpframe3={1,2,3,4,5};
         byte[] tmpframe4={0xc,0xc,0xc,0xc,0xc};
         byte[] nullframe={(byte)255,(byte)255,(byte)255,(byte)255,(byte)255};
 

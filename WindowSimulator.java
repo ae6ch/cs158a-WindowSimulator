@@ -8,14 +8,14 @@ class WindowSimulator {
             System.out.println("Usage: WindowSimulator sws rws channel_length prob_not_recv prob_not_ackd num_frames");
             System.exit(1);
         }       
-        int sws=Integer.parseInt(args[0]), rws=Integer.parseInt(args[1]);
+        byte sws=Byte.parseByte(args[0]), rws=Byte.parseByte(args[1]);
         int channel_length=Integer.parseInt(args[2]);
         float prob_not_recv=Float.parseFloat(args[3]);
         float prob_not_ackd=Float.parseFloat(args[4]);
         int num_frames=Integer.parseInt(args[5]);
 		
 		if ((channel_length < sws) || (sws<1 || sws>127) || (rws<1 || rws>127) || (prob_not_recv < 0 || prob_not_recv > 1) || (prob_not_ackd < 0 || prob_not_ackd > 1)) {
-            System.out.println("Invald Inputs");
+            System.out.println("Invalid Inputs");
             System.exit(1);
         }
         
@@ -23,16 +23,14 @@ class WindowSimulator {
         Station receiver = new Station(sws, rws, prob_not_recv);
         Pipe senderPipe = new Pipe(channel_length);
         Pipe receiverPipe = new Pipe(channel_length);
-        int MaxSeqNum=sws*2;
         int steps=0;
         int counter=0;
         boolean notDone=true;
         float sumUtilizations=(float)0.0;
-        int numSuccessfulAcks=0;
         
         while(notDone) {
             // Prints the word "Step" followed by the current value of step followed by a newline.
-            System.out.printf("Step %d\n",steps);
+            System.out.printf("Step %d\n",steps);    
             
             // Prints "senderPipe" followed by a newline, followed by the result of calling printContents() on this Pipe, followed by a newline.
             System.out.println("senderPipe");
@@ -49,7 +47,7 @@ class WindowSimulator {
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
             if ( (counter < num_frames) && sender.isReady() && receiver.isReady() ) {
                 if (!sender.send(counter)) {
-                       receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
+                      // receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
                     } else
                    counter++;
             }
@@ -75,18 +73,9 @@ class WindowSimulator {
             sender.receiveFrame(frame);
 
           
-            if ((frame[0] != (byte) 255) && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)254) {
-                numSuccessfulAcks++;
-                if (numSuccessfulAcks > num_frames-1) notDone=false;
-            }
-
-   
-            if ((frame[0] == (num_frames-1) ) && frame[1] == (byte)255 && frame[2] == (byte)255 && frame[3] == (byte)255 && frame[4] == (byte)254) {
-                notDone=false;
-
-            }
-
-          
+            System.out.printf("Number of Acks Received so far: %d\n",sender.numSuccessfulAcks);
+            if (sender.numSuccessfulAcks > num_frames-1) notDone=false;
+        
             //If notDone is still false, steps should be incremented.
             if (notDone) {
                 steps++;
@@ -95,6 +84,6 @@ class WindowSimulator {
         // Once this loop completes, WindowSimulator should output the final value of steps 
         // and it should compute sumUtilizations/steps and output this as the average pipe utilization.
         System.out.printf("Steps %d\nAverage Pipe Utilization: %f%%\n",steps, (float)(sumUtilizations/steps)*100);
-        
-    }
-}
+       
+    }  
+}    
