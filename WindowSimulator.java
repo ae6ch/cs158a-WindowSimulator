@@ -1,4 +1,4 @@
-import java.io.*;
+
 class WindowSimulator {
 
 // Usage: WindowSimulator sws rws channel_length prob_not_recv prob_not_ackd num_frames
@@ -46,11 +46,7 @@ class WindowSimulator {
             sumUtilizations += (senderPipe.utilization()+receiverPipe.utilization())/2;
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
             if ( (counter < num_frames) && sender.isReady() && receiver.isReady() ) {
-               // if (!sender.send(counter)) {
-                      // receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
-                //    } else
-
-                 //  counter++;
+               
                  sender.send(counter++);
             }
             
@@ -80,7 +76,7 @@ class WindowSimulator {
             //If notDone is still false, steps should be incremented.
             if (notDone) {
                 steps++;
-                System.out.printf("DEBUG Steps %d Count %d\n",steps,counter);
+                //System.out.printf("DEBUG Steps %d Count %d\n",steps,counter);
             }
         } 
         // Once this loop completes, WindowSimulator should output the final value of steps 
