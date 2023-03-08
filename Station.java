@@ -7,7 +7,7 @@ import java.util.Arrays;
  */
 public class Station {
 
-    static int TIMER = 25;  
+    static int TIMER = 10;
     int sentFramesTotal=0;
     int rxFramesTotal=0;
     int sentAcksTotal=0;
@@ -56,11 +56,27 @@ public class Station {
             
     }
 
-    public boolean isReady() {      // returns whether the Station can receive a new frame to queue - free buffer space, and lfs - lar <= sws
-      //  if (lfs - lar <= sws) {  
+    public boolean isReady() { 
+        // returns whether the Station can receive a new frame to queue - free buffer space, and lfs - lar <= sws
+      boolean send = false;
+      boolean recieve = false;
+
+      for(int i = 0; i < senderBuffer.length; i+=5){
+          if(senderBuffer[i] == (byte)255 && senderBuffer[i+1] == (byte)255 && senderBuffer[i+2] == (byte)255 && senderBuffer[i+3] == (byte)255 && senderBuffer[i+4] == (byte)255){
+              send = true;
+              break;
+          }
+      }
+      for(int i = 0; i < receiverBuffer.length; i+=5){
+          if(receiverBuffer[i] == (byte)255 && receiverBuffer[i+1] == (byte)255 && receiverBuffer[i+2] == (byte)255 && receiverBuffer[i+3] == (byte)255 && receiverBuffer[i+4] == (byte)255){
+              recieve = true;
+              break;
+          }
+      }
+//  if (lfs - lar <= sws) {
            // for (int i=0; i<receiverBuffer.length; i+=5) { // returns true once we find one free entry in the receiverBuffer 
            //     if ((receiverBuffer[i] == (byte)255) && (receiverBuffer[i+1] == (byte)255) && (receiverBuffer[i+2] == (byte)255) && (receiverBuffer[i+3] == (byte)255) && (receiverBuffer[i+4] == (byte)255))
-                    return true; // in window and buffer space
+                    return send && recieve; // in window and buffer space
            //     }
        // }
      //   return false;  // not in window, and/or no buffer space
@@ -68,11 +84,7 @@ public class Station {
 
     public boolean send(int data) {
         byte[] sendTemp = ByteBuffer.allocate(4).putInt(data).array();
-        for(int ia = 0; ia < age.length; ia++){    // Increase age of all frames that are active, decrease all timers
-            age[ia]++;
-
-         // if (timers[ia]>=0) timers[ia]--;
-        }
+       
 
         int i;
         
@@ -86,7 +98,7 @@ public class Station {
                 senderBuffer[i+3] = sendTemp[2];
                 senderBuffer[i+4] = sendTemp[3];
                 System.out.printf("A  Senderbuffer = %d %d %d %d %d\n",senderBuffer[i],senderBuffer[i+1],senderBuffer[i+2],senderBuffer[i+3],senderBuffer[i+4]);
-                timers[i/5 ] = TIMER;         // Queue Timer
+                //timers[i/5 ] = TIMER;         // Queue Timer
                 age[i/5] = 0;                // Set Age to 0
                 resends[i/5] = -1;            // We've never resent this frame
             return true;
@@ -162,23 +174,22 @@ public class Station {
 
             for(int i = 0; i < timers.length; i++){ 
                 int ibuf=i*5; 
-                if (timers[i] == 0) {       // Frame stored in i has expired timer
+                if (timers[i] <= 0) {       // Frame stored in i has expired timer
                     System.out.printf("Timer %d expired\n",i);
                     if ((senderBuffer[ibuf] == (byte)255) && (senderBuffer[ibuf+1] == (byte)255) && (senderBuffer[ibuf+2] == (byte)255) && (senderBuffer[ibuf+3] == (byte)255) && (senderBuffer[ibuf+4] == (byte)255)) {
                         // Frame is a non-frame, ignore
-                        timers[i] = TIMER;
-                        age[i]++;
+                        timers[i] = -1;
                     } 
                     if ((senderBuffer[ibuf+1] == (byte)255) && (senderBuffer[ibuf+2] == (byte)255) && (senderBuffer[ibuf+3] == (byte)255) && (senderBuffer[ibuf+4] == (byte)254)) {
                         // Frame is a ack, set to non-frame and ignore
                         // 
                         senderBuffer[ibuf]=(byte) 255;
                         senderBuffer[ibuf+4]=(byte) 255;
-                        timers[i] = TIMER;
-                         age[i]++;
+                        timers[i] = -1;
                      }
 
-                    if ((resends[i] >= 1) && (isCandidate==false)) {    // #2-3 Find oldest frame that has been resent, and then resend it again             
+                  //  if ((resends[i] >= 1) && (isCandidate==false)) {    // #2-3 Find oldest frame that has been resent, and then resend it again  
+                    if(isCandidate==false) {           
                         System.out.printf("Looking at %d for age=%d and oldestresendage=%d\n",i,age[i],oldestResendAge);
                         System.out.printf("is %d greater then %d?\n",i,age[i],oldestResendAge);
                         if (age[i] > oldestResendAge) {
@@ -191,11 +202,9 @@ public class Station {
                             sendCandidate[3] = senderBuffer[ibuf+3];
                             sendCandidate[4] = senderBuffer[ibuf+4];
                             isCandidate=true;                   
-                            timers[i] = TIMER;
-                            age[i]++;
                         }
                     } 
-                    if ((resends[i] <= -1) && (isCandidate==false)) {     // #4 ind oldest frame that has never been sent, and then send it
+                   if ((resends[i] <= 0) && (isCandidate==false)) {     // #4 ind oldest frame that has never been sent, and then send it
                          System.out.printf("Looking at %d for non resends age=%d and oldestAge=%d\n",i,age[i],oldestAge);
 
                          System.out.printf("is %d greater then %d?\n",i,age[i],oldestAge);
@@ -209,8 +218,6 @@ public class Station {
                             sendCandidate[3] = senderBuffer[ibuf+3];
                             sendCandidate[4] = senderBuffer[ibuf+4];
                             isCandidate=true;
-                            timers[i] = TIMER;
-                            age[i]++;
                             //System.out.printf("A 1 sendCandidate = %d %d %d %d %d\n",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
 
                         }
@@ -219,10 +226,13 @@ public class Station {
             }
             if (isCandidate) {  // If we now have a frame to send and its a resend, need to increment resend for the frame
                 if (oldestResendAge > 0) {  // This is a resend
+                System.out.printf("DEBUG Q FOR RESEND\n");
                 resends[oldestResendAgePos]++;
                 timers[oldestResendAgePos] = TIMER;
                 }
-                if (oldestAge > 0) {  // This is a not resend
+                if (oldestAge > 0) {  // This isthe initial send
+                    System.out.printf("DEBUG Q FOR SEND\n");
+
                     timers[oldestAgePos] = TIMER;
                     resends[oldestAgePos]=0;
                 }
@@ -239,10 +249,11 @@ public class Station {
         */
        
        if ((float) Math.random() < propDrop) { 
-         System.out.printf("*** DROP FRAME ***\n");
+         System.out.printf("DEBUG*** DROPPING FRAME %x %x %x %x %x ***\n", sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
         byte[] non_frame = {(byte) 255, (byte) 255, (byte) 255, (byte) 255, (byte) 255};
         return non_frame; 
-       }
+       } else System.out.printf("DEBUG*** NOT DROPPING FRAME %x %x %x %x %x ***\n", sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
+       
 
        if (isCandidate) { 
        // System.out.printf("A 2 sendCandidate = %d %d %d %d %d\n",sendCandidate[0],sendCandidate[1],sendCandidate[2],sendCandidate[3],sendCandidate[4]);
@@ -287,6 +298,8 @@ public class Station {
             if(true)  { // ack is in window
                 System.out.println("got a in window ack-frame");
                 numSuccessfulAcks++;
+                System.out.printf("DEBUG Number of Acks Received so far: %d\n",numSuccessfulAcks);
+
                 lar=SeqNum;
 
                 System.out.printf("Sendbuffer BEFORE:\n");
@@ -320,14 +333,7 @@ public class Station {
             return;
         }
         
-       // if (laf > maxSeq) 
-      //  if (((SeqNum  <= lfr) || ((SeqNum) > laf)))
-       //     if ((laf>maxSeq) && (SeqNum >= (laf-(lfr+1))))
-       //{
-       //     System.out.printf("got a out of window frame %d for %d and %d\n",SeqNum,lfr,laf);
-       //     // this frame is out of window and is discarded
-        //    return;
-      //  } 
+    
     
         // The Frame is in the window
         System.out.printf("got a in window frame %d for %d and %d",SeqNum,lfr,laf);

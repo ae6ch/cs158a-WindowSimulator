@@ -46,10 +46,12 @@ class WindowSimulator {
             sumUtilizations += (senderPipe.utilization()+receiverPipe.utilization())/2;
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
             if ( (counter < num_frames) && sender.isReady() && receiver.isReady() ) {
-                if (!sender.send(counter)) {
+               // if (!sender.send(counter)) {
                       // receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
-                    } else
-                   counter++;
+                //    } else
+
+                 //  counter++;
+                 sender.send(counter++);
             }
             
             // It calls the sender's nextTransmitFrame(), 
@@ -73,12 +75,12 @@ class WindowSimulator {
             sender.receiveFrame(frame);
 
           
-            System.out.printf("Number of Acks Received so far: %d\n",sender.numSuccessfulAcks);
-            if (sender.numSuccessfulAcks > num_frames-1) notDone=false;
+            if (sender.numSuccessfulAcks >= num_frames-1) notDone=false;
         
             //If notDone is still false, steps should be incremented.
             if (notDone) {
                 steps++;
+                System.out.printf("DEBUG Steps %d Count %d\n",steps,counter);
             }
         } 
         // Once this loop completes, WindowSimulator should output the final value of steps 
