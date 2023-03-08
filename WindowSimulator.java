@@ -1,9 +1,18 @@
 import java.io.*;
+import java.io.*;
+
 class WindowSimulator {
 
 // Usage: WindowSimulator sws rws channel_length prob_not_recv prob_not_ackd num_frames
 
     public static void main(String[] args) {
+        args = new String[6];
+        args[0]="5";
+        args[1]="5";
+        args[2]="6";
+        args[3]="0.9";
+        args[4]="0.9";
+        args[5]="8";
         if (args.length != 6) {
             System.out.println("Usage: WindowSimulator sws rws channel_length prob_not_recv prob_not_ackd num_frames");
             System.exit(1);
@@ -45,13 +54,9 @@ class WindowSimulator {
             // Adds the average of the senderPipe and receiverPipe utilization to sumUtilizations.
             sumUtilizations += (senderPipe.utilization()+receiverPipe.utilization())/2;
             //Checks if there is still data to send ( counter < num_frames) and that isReady() is true. If so, it calls send(counter) and increments counter.
-            if ( (counter < num_frames) && sender.isReady() && receiver.isReady() ) {
-               // if (!sender.send(counter)) {
-                      // receiver.receiveFrame(senderPipe.addFrame(sender.nextTransmitFrame()));
-                //    } else
-
-                 //  counter++;
-                 sender.send(counter++);
+            if ( (counter < num_frames) && sender.isReady()) {
+                   sender.send(counter);
+                   counter++;
             }
             
             // It calls the sender's nextTransmitFrame(), 
@@ -75,12 +80,12 @@ class WindowSimulator {
             sender.receiveFrame(frame);
 
           
-            if (sender.numSuccessfulAcks >= num_frames-1) notDone=false;
+            System.out.printf("Number of Acks Received so far: %d\n",sender.numSuccessfulAcks);
+            if (sender.numSuccessfulAcks > num_frames-1) notDone=false;
         
             //If notDone is still false, steps should be incremented.
             if (notDone) {
                 steps++;
-                System.out.printf("DEBUG Steps %d Count %d\n",steps,counter);
             }
         } 
         // Once this loop completes, WindowSimulator should output the final value of steps 
@@ -88,4 +93,4 @@ class WindowSimulator {
         System.out.printf("Steps %d\nAverage Pipe Utilization: %f%%\n",steps, (float)(sumUtilizations/steps)*100);
        
     }  
-}    
+}
