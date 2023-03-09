@@ -134,7 +134,7 @@ public class Station {
        // System.out.printf("\n");
         //System.out.printf("Senderbuffer: ");
         for (int ic = 0; ic<senderBuffer.length; ic++) {
-            System.out.printf("%x ",senderBuffer[ic]);
+            //System.out.printf("%x ",senderBuffer[ic]);
         }
       //  System.out.printf("\n");
 
