@@ -1,18 +1,13 @@
 import java.io.*;
 import java.io.*;
 
-class WindowSimulator {
+import java.io.*;
+
+class Window {
 
 // Usage: WindowSimulator sws rws channel_length prob_not_recv prob_not_ackd num_frames
 
     public static void main(String[] args) {
-        args = new String[6];
-        args[0]="5";
-        args[1]="5";
-        args[2]="6";
-        args[3]="0.9";
-        args[4]="0.9";
-        args[5]="8";
         if (args.length != 6) {
             System.out.println("Usage: WindowSimulator sws rws channel_length prob_not_recv prob_not_ackd num_frames");
             System.exit(1);
@@ -80,7 +75,7 @@ class WindowSimulator {
             sender.receiveFrame(frame);
 
           
-            System.out.printf("Number of Acks Received so far: %d\n",sender.numSuccessfulAcks);
+            //System.out.printf("Number of Acks Received so far: %d\n",sender.numSuccessfulAcks);
             if (sender.numSuccessfulAcks > num_frames-1) notDone=false;
         
             //If notDone is still false, steps should be incremented.
