@@ -53,7 +53,7 @@ public class Station {
     }
 
     public boolean isReady() { 
-        // returns whether the Station can receive a new frame to queue - free buffer space, and lfs - lar <= sws
+        // returns whether the Station can receive a new frame to queue, since we only use station as a sender or reciever, either send or receive will always be true, allowing the function to return the status of the correct buffer if called on the sender or receiver
       boolean send = false;
       boolean recieve = false;
       
