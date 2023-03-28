@@ -1,3 +1,5 @@
+#
+# SJSU Spring 2023 CS158A Section 2 Homework 2
 # cs158a-WindowSimulator
 For the coding portion of the homework I'd like you to write a Java program WindowSimulator.java that allows users to conduct experiments involving the sliding window protocol. Your program will be compiled from the command line with a syntax:
 
