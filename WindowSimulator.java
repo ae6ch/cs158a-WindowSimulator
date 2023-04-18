@@ -2,7 +2,7 @@ import java.io.*;
 import java.io.*;
 
 import java.io.*;
-//Zayd Kudaimi 015637245 Shinhyung Lee 014175837 Steve Rubin 017439448
+//Zayd Kudaimi  Shinhyung Lee  Steve Rubin 
 class WindowSimulator {
 
 // Usage: WindowSimulator sws rws channel_length prob_not_recv prob_not_ackd num_frames
